@@ -1,3 +1,6 @@
+import { FOOTBALL_POSITIONS, FOOTBALL_SKILLS } from "./sports/football";
+import type { GymnasticsCategoryId, SportId } from "./sports/types";
+
 export type OrganizationType = "academy" | "club";
 export type Membership = {
   organizationId: number;
@@ -6,6 +9,8 @@ export type Membership = {
   role: "owner" | "staff";
   region: string;
   isDemo: boolean;
+  /** Sports the organization is configured to operate. */
+  sports: SportId[];
 };
 export type Session = {
   user: { id: number; name: string | null; email: string | null } | null;
@@ -13,28 +18,20 @@ export type Session = {
   mode?: "member" | "demo";
   demoToken?: string;
 };
-export const SKILLS = [
-  "التسديد",
-  "المراوغة",
-  "التمرير",
-  "السرعة",
-  "القوة البدنية",
-  "التحكم بالكرة",
-  "القفز",
-  "اتخاذ القرار",
-] as const;
-export const POSITIONS = [
-  "مهاجم",
-  "وسط",
-  "مدافع",
-  "جناح",
-  "حارس مرمى",
-] as const;
+/**
+ * Backwards-compatible football vocabulary. Sport-aware screens read the
+ * selected sport's configuration instead of these constants.
+ */
+export const SKILLS = FOOTBALL_SKILLS;
+export const POSITIONS = FOOTBALL_POSITIONS;
 export type SkillValue = { name: string; value: number };
 export type HistoryPoint = { date: string; label: string; score: number };
 export type PlayerCard = {
   id: number;
   academyId: number;
+  sport: SportId;
+  /** Empty for sports without artistic categories. */
+  gymnasticsCategory: GymnasticsCategoryId | "";
   academyName: string;
   name: string;
   age: number;
@@ -65,6 +62,8 @@ export type Player = PlayerCard & {
 };
 export type PlayerInput = {
   name: string;
+  sport: SportId;
+  gymnasticsCategory?: GymnasticsCategoryId | "";
   age: number;
   nationality: string;
   position: string;
@@ -155,6 +154,9 @@ export type Note = {
   visibility?: "academy_internal" | "shared";
   originalText?: string;
   updatedAt?: string;
+  /** Latest editor only; the author attribution above is never overwritten. */
+  lastEditedByName?: string;
+  lastEditedByUserId?: number | null;
   revisions?: import("./evaluation-types").NoteRevision[];
 };
 export type Report = {

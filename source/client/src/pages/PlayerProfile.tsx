@@ -13,6 +13,7 @@ import {
   Footprints,
   Hash,
   Info,
+  Layers,
   LockKeyhole,
   Pencil,
   Ruler,
@@ -67,6 +68,9 @@ import EvaluationSummary, {
 } from "@/components/athlete/EvaluationSummary";
 import SessionNotes from "@/components/athlete/SessionNotes";
 import ExercisePlans from "@/components/athlete/ExercisePlans";
+import HealthPanel from "@/components/athlete/HealthPanel";
+import PhysicalAssessments from "@/components/athlete/PhysicalAssessments";
+import { gymnasticsCategoryName, sportDefinition } from "@shared/sports";
 import "./athlete-pages.css";
 import "./player-reference.css";
 import "@/components/athlete/session-evaluation.css";
@@ -78,7 +82,8 @@ type ProfileTab =
   | "skills"
   | "comparison"
   | "videos"
-  | "reports";
+  | "reports"
+  | "health";
 
 const profileTabs: { id: ProfileTab; label: string }[] = [
   { id: "overview", label: "نظرة عامة" },
@@ -88,6 +93,7 @@ const profileTabs: { id: ProfileTab; label: string }[] = [
   { id: "comparison", label: "المقارنات" },
   { id: "videos", label: "الفيديوهات" },
   { id: "reports", label: "التقارير" },
+  { id: "health", label: "الصحة والطوارئ" },
 ];
 
 function formatDate(value: string | null | undefined) {
@@ -130,8 +136,16 @@ function SessionFollowUp({
   const contextKey = `${orgId ?? "unknown"}-${playerId}-${analysisId ?? "general"}`;
   return (
     <div className="session-follow-up-grid">
-      <SessionNotes key={`notes-${contextKey}`} playerId={playerId} analysisId={analysisId} />
-      <ExercisePlans key={`plans-${contextKey}`} playerId={playerId} analysisId={analysisId} />
+      <SessionNotes
+        key={`notes-${contextKey}`}
+        playerId={playerId}
+        analysisId={analysisId}
+      />
+      <ExercisePlans
+        key={`plans-${contextKey}`}
+        playerId={playerId}
+        analysisId={analysisId}
+      />
     </div>
   );
 }
@@ -299,7 +313,11 @@ function LatestAnalysis({ analysis }: { analysis?: Analysis }) {
           <span className="badge">
             تقدير رؤية حاسوبية من المقطع — زوايا 2D غير معايرة
           </span>
-        ) : isSimulation ? <DemoBadge compact /> : <span className="badge">سجل تحليل متاح</span>}
+        ) : isSimulation ? (
+          <DemoBadge compact />
+        ) : (
+          <span className="badge">سجل تحليل متاح</span>
+        )}
       </div>
       {analysis.evaluation ? (
         <EvaluationSummary
@@ -310,7 +328,11 @@ function LatestAnalysis({ analysis }: { analysis?: Analysis }) {
       ) : (
         <EmptyState
           title="لم تُقيّم هذه الجلسة"
-          description={isSimulation ? "هذا سجل تجريبي أرشيفي؛ لا يثبت قياسًا أو معيارًا صالحًا للتقييم الحالي." : "لا توجد قياسات محفوظة مع طريقة تقييم موثقة لهذه الجلسة."}
+          description={
+            isSimulation
+              ? "هذا سجل تجريبي أرشيفي؛ لا يثبت قياسًا أو معيارًا صالحًا للتقييم الحالي."
+              : "لا توجد قياسات محفوظة مع طريقة تقييم موثقة لهذه الجلسة."
+          }
         />
       )}
     </div>
@@ -406,11 +428,21 @@ function PhysicalTab({
 }) {
   return (
     <div className="section-stack">
-      <Panel title="القياسات والاختبارات البدنية" icon={Dumbbell}>
+      <Panel title="المؤشرات البدنية الموحّدة" icon={Dumbbell}>
+        <PhysicalAssessments
+          playerId={player.id}
+          sport={player.sport}
+          compact
+        />
+      </Panel>
+      <Panel
+        title="القياسات والاختبارات البدنية (سجل نصي قديم)"
+        icon={Dumbbell}
+      >
         <p className="helper">
-          مصدر هذه القيم: الاختبارات المُدخلة في ملف اللاعب بواسطة المدرب، أو
-          بيانات الملف التجريبي. لا تُستخرج من الفيديو ولا من نموذج ذكاء
-          اصطناعي.
+          هذه القيم نصية حرة محفوظة من إصدار سابق، وتُعرض للقراءة فقط للحفاظ على
+          السجل التاريخي. الإدخال الجديد يتم عبر المؤشرات الموحّدة أعلاه فقط. لا
+          تُستخرج هذه القيم من الفيديو ولا من نموذج ذكاء اصطناعي.
         </p>
         {player.physicalTests.length ? (
           <div className="stats-grid physical-tests-grid">
@@ -496,11 +528,7 @@ function MotionTab({ analyses }: { analyses: Analysis[] }) {
   );
 }
 
-function SkillsTab({
-  analyses,
-}: {
-  analyses: Analysis[];
-}) {
+function SkillsTab({ analyses }: { analyses: Analysis[] }) {
   const evaluated = analyses.filter(analysis => Boolean(analysis.evaluation));
   return (
     <div className="section-stack">
@@ -515,7 +543,10 @@ function SkillsTab({
               <article className="session-measurement" key={analysis.id}>
                 <span className="metric-code">جلسة #{analysis.id}</span>
                 <strong>{analysis.skill}</strong>
-                <p>{formatDate(analysis.createdAt)} · {analysis.evaluation?.measurements.length ?? 0} قياس محفوظ</p>
+                <p>
+                  {formatDate(analysis.createdAt)} ·{" "}
+                  {analysis.evaluation?.measurements.length ?? 0} قياس محفوظ
+                </p>
               </article>
             ))}
           </div>
@@ -564,20 +595,31 @@ function ComparisonTab({
   const baseline = sessions.find(analysis => analysis.id === baseId);
   const current = sessions.find(analysis => analysis.id === currentId);
   const compatibility = useMemo(() => {
-    if (!baseline || !current) return { compatible: false, reasons: ["اختر جلستين محفوظتين للمقارنة."] };
-    if (baseline.id === current.id) return { compatible: false, reasons: ["اختر جلستين مختلفتين؛ جلسة واحدة لا تثبت تطورًا."] };
+    if (!baseline || !current)
+      return { compatible: false, reasons: ["اختر جلستين محفوظتين للمقارنة."] };
+    if (baseline.id === current.id)
+      return {
+        compatible: false,
+        reasons: ["اختر جلستين مختلفتين؛ جلسة واحدة لا تثبت تطورًا."],
+      };
     return compareSessionCompatibility(baseline, current);
   }, [baseline, current]);
   const matchingMeasurements = useMemo(() => {
-    if (!baseline?.evaluation || !current?.evaluation || !compatibility.compatible) return [];
+    if (
+      !baseline?.evaluation ||
+      !current?.evaluation ||
+      !compatibility.compatible
+    )
+      return [];
     return baseline.evaluation.measurements.flatMap(measurement => {
-      const peer = current.evaluation?.measurements.find(candidate =>
-        candidate.indicatorCode === measurement.indicatorCode &&
-        candidate.unit === measurement.unit &&
-        measurement.validity === "valid" &&
-        candidate.validity === "valid" &&
-        typeof measurement.value === "number" &&
-        typeof candidate.value === "number"
+      const peer = current.evaluation?.measurements.find(
+        candidate =>
+          candidate.indicatorCode === measurement.indicatorCode &&
+          candidate.unit === measurement.unit &&
+          measurement.validity === "valid" &&
+          candidate.validity === "valid" &&
+          typeof measurement.value === "number" &&
+          typeof candidate.value === "number"
       );
       return peer ? [{ left: measurement, right: peer }] : [];
     });
@@ -605,7 +647,8 @@ function ComparisonTab({
               <option value="">اختر جلسة</option>
               {sessions.map(session => (
                 <option key={session.id} value={session.id}>
-                  #{session.id} · {session.skill} · {formatDate(session.createdAt)}
+                  #{session.id} · {session.skill} ·{" "}
+                  {formatDate(session.createdAt)}
                 </option>
               ))}
             </select>
@@ -624,7 +667,8 @@ function ComparisonTab({
               <option value="">اختر جلسة</option>
               {sessions.map(session => (
                 <option key={session.id} value={session.id}>
-                  #{session.id} · {session.skill} · {formatDate(session.createdAt)}
+                  #{session.id} · {session.skill} ·{" "}
+                  {formatDate(session.createdAt)}
                 </option>
               ))}
             </select>
@@ -635,16 +679,30 @@ function ComparisonTab({
             title="لا تتوفر جلستان موثقتان"
             description="تحتاج مقارنة التطور إلى جلستين على الأقل مع قياسات محفوظة، ولا تستخدم سجل الملف أو القيم الافتراضية بديلًا."
           />
-        ) : baseline && current && compatibility.compatible && matchingMeasurements.length ? (
+        ) : baseline &&
+          current &&
+          compatibility.compatible &&
+          matchingMeasurements.length ? (
           <div className="table-wrap">
             <table className="data-table">
-              <thead><tr><th>المؤشر</th><th>جلسة #{baseline.id}</th><th>جلسة #{current.id}</th><th>المرجع</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>المؤشر</th>
+                  <th>جلسة #{baseline.id}</th>
+                  <th>جلسة #{current.id}</th>
+                  <th>المرجع</th>
+                </tr>
+              </thead>
               <tbody>
                 {matchingMeasurements.map(({ left, right }) => (
                   <tr key={left.indicatorCode}>
                     <th>{left.name}</th>
-                    <td>{formatNumber(left.value)} {left.unit}</td>
-                    <td>{formatNumber(right.value)} {right.unit}</td>
+                    <td>
+                      {formatNumber(left.value)} {left.unit}
+                    </td>
+                    <td>
+                      {formatNumber(right.value)} {right.unit}
+                    </td>
                     <td>نفس الرمز والوحدة والطريقة المتوافقة</td>
                   </tr>
                 ))}
@@ -653,21 +711,47 @@ function ComparisonTab({
           </div>
         ) : (
           <EmptyState
-            title={baseline && current ? "المقارنة غير متاحة" : "اختر جلستين للمقارنة"}
-            description={compatibility.reasons.join(" ") || "لا توجد قياسات متطابقة صالحة في الجلستين؛ لا تُولد أرقام بديلة."}
+            title={
+              baseline && current
+                ? "المقارنة غير متاحة"
+                : "اختر جلستين للمقارنة"
+            }
+            description={
+              compatibility.reasons.join(" ") ||
+              "لا توجد قياسات متطابقة صالحة في الجلستين؛ لا تُولد أرقام بديلة."
+            }
           />
         )}
       </Panel>
       <Panel title="مقارنة لاعب آخر" icon={LockKeyhole}>
-        <p className="muted">المقارنة الكمية بين ملفات لاعبين غير مدعومة من بيانات الملف القديمة. يلزم نموذج جلسات متوافق ومصرّح به لكلا اللاعبين؛ لذلك لا تعرض هذه الواجهة أصفارًا أو أشرطة تقديرية.</p>
+        <p className="muted">
+          المقارنة الكمية بين ملفات لاعبين غير مدعومة من بيانات الملف القديمة.
+          يلزم نموذج جلسات متوافق ومصرّح به لكلا اللاعبين؛ لذلك لا تعرض هذه
+          الواجهة أصفارًا أو أشرطة تقديرية.
+        </p>
         <label className="field">
           لاعب آخر (للتنقل فقط)
-          <select value={otherPlayerId ?? ""} onChange={event => setOtherPlayerId(event.target.value ? Number(event.target.value) : undefined)}>
+          <select
+            value={otherPlayerId ?? ""}
+            onChange={event =>
+              setOtherPlayerId(
+                event.target.value ? Number(event.target.value) : undefined
+              )
+            }
+          >
             <option value="">اختر لاعبًا</option>
-            {candidates.map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.name} — {candidate.academyName}</option>)}
+            {candidates.map(candidate => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.name} — {candidate.academyName}
+              </option>
+            ))}
           </select>
         </label>
-        {otherPlayerId ? <p className="evaluation-no-rule">لم يُقيّم: لا توجد مقارنة جلسات متعددة اللاعبين موثقة في هذا المسار.</p> : null}
+        {otherPlayerId ? (
+          <p className="evaluation-no-rule">
+            لم يُقيّم: لا توجد مقارنة جلسات متعددة اللاعبين موثقة في هذا المسار.
+          </p>
+        ) : null}
       </Panel>
     </div>
   );
@@ -912,6 +996,9 @@ export default function PlayerProfile({ id }: { id?: string }) {
       case "physical":
         content = <PhysicalTab player={player} latestAnalysis={analyses[0]} />;
         break;
+      case "health":
+        content = <HealthPanel playerId={player.id} />;
+        break;
       case "motion":
         content = <MotionTab analyses={analyses} />;
         break;
@@ -919,7 +1006,13 @@ export default function PlayerProfile({ id }: { id?: string }) {
         content = <SkillsTab analyses={analyses} />;
         break;
       case "comparison":
-        content = <ComparisonTab player={player} candidates={candidates} analyses={analyses} />;
+        content = (
+          <ComparisonTab
+            player={player}
+            candidates={candidates}
+            analyses={analyses}
+          />
+        );
         break;
       case "videos":
         content = (
@@ -1023,7 +1116,23 @@ export default function PlayerProfile({ id }: { id?: string }) {
             label="القدم المفضلة"
             value={player.foot}
           />
-          <DetailItem icon={UserRound} label="المركز" value={player.position} />
+          <DetailItem
+            icon={UserRound}
+            label={sportDefinition(player.sport).terminology.group}
+            value={player.position}
+          />
+          <DetailItem
+            icon={Activity}
+            label="الرياضة"
+            value={sportDefinition(player.sport).name}
+          />
+          {player.sport === "gymnastics" && player.gymnasticsCategory ? (
+            <DetailItem
+              icon={Layers}
+              label="فئة الجمباز"
+              value={gymnasticsCategoryName(player.gymnasticsCategory)}
+            />
+          ) : null}
           <DetailItem
             icon={CalendarDays}
             label="تاريخ الميلاد"

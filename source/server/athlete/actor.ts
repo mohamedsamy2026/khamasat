@@ -4,6 +4,7 @@ import { and, eq, gt, inArray } from "drizzle-orm";
 import { demoSessions, organizations } from "../../drizzle/schema";
 import { ForbiddenError, HttpError } from "../../shared/_core/errors";
 import type { Membership } from "../../shared/athlete";
+import type { SportId } from "../../shared/sports/types";
 import { getDb } from "../db";
 import { sdk, type AuthenticatedUser } from "../_core/sdk";
 import type { OrganizationContext } from "./policy";
@@ -12,6 +13,7 @@ export type OrganizationMembership = OrganizationContext & {
   name: string;
   region: string;
   isDemo: boolean;
+  sports: SportId[];
 };
 
 export type MemberActor = {
@@ -81,7 +83,7 @@ export function asMembership(
   row: Pick<
     OrganizationMembership,
     "organizationId" | "name" | "type" | "role" | "region" | "isDemo"
-  >
+  > & { sports?: readonly string[] }
 ): Membership {
   return {
     organizationId: row.organizationId,
@@ -90,6 +92,10 @@ export function asMembership(
     role: row.role,
     region: row.region,
     isDemo: Boolean(row.isDemo),
+    sports: (row.sports ?? []).filter(
+      (sport): sport is SportId =>
+        sport === "football" || sport === "gymnastics"
+    ),
   };
 }
 
@@ -170,6 +176,7 @@ export async function getGuestActorForToken(
         name: academy.name,
         region: academy.region,
         isDemo: true,
+        sports: academy.sports,
         actorKind: "demo",
         workspaceAcademyId: academy.id,
         workspaceClubId: club.id,
@@ -182,6 +189,7 @@ export async function getGuestActorForToken(
         name: club.name,
         region: club.region,
         isDemo: true,
+        sports: club.sports,
         actorKind: "demo",
         workspaceAcademyId: academy.id,
         workspaceClubId: club.id,

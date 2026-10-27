@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
+  Activity,
   Bell,
   ChartNoAxesCombined,
   ChevronLeft,
@@ -189,6 +190,9 @@ export default function Layout({ children }: { children: ReactNode }) {
           { path: "/favorites", title: "المفضلة", icon: Heart },
           { path: "/requests", title: "طلبات الملفات", icon: ClipboardList },
           { path: "/reports", title: "التقارير", icon: FileChartColumn },
+          ...(organization?.sports?.includes("gymnastics")
+            ? [{ path: "/gymnastics", title: "قسم الجمباز", icon: Activity }]
+            : []),
           {
             path: "/training",
             title: "البرامج التدريبية",
@@ -211,6 +215,9 @@ export default function Layout({ children }: { children: ReactNode }) {
           },
           { path: "/reports", title: "التقارير", icon: FileChartColumn },
           { path: "/requests", title: "طلبات الأندية", icon: Shield },
+          ...(organization?.sports?.includes("gymnastics")
+            ? [{ path: "/gymnastics", title: "قسم الجمباز", icon: Activity }]
+            : []),
         ];
   const organizationSelect =
     organization && (session?.user || isDemo) ? (

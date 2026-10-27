@@ -108,8 +108,11 @@ export type SessionCompatibility = { compatible: boolean; reasons: string[] };
 export type NoteRevision = {
   text: string;
   requiredAction: string;
+  /** Display name of the coach who saved this revision. */
   authorName: string;
   editedAt: string;
+  /** Optional for revisions written before editor identity was recorded. */
+  editedByUserId?: number | null;
 };
 export type ExercisePlan = {
   id: number;

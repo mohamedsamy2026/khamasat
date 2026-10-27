@@ -19,10 +19,17 @@ import type {
   Note,
   PlayerCard,
 } from "@shared/athlete";
+import {
+  DEFAULT_SPORT,
+  SPORT_IDS,
+  sportDefinition,
+  type SportId,
+} from "@shared/sports";
 import { api, clearDemoToken, useApi, useAthlete } from "@/lib/athleteApi";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import PlayerSessionWorkspace from "@/components/athlete/PlayerSessionWorkspace";
+import "@/components/athlete/sport-forms.css";
 import {
   DemoBadge,
   EmptyState,
@@ -599,12 +606,14 @@ export function Settings() {
   const [, setLocation] = useLocation();
   const [name, setName] = useState("");
   const [region, setRegion] = useState("");
+  const [sports, setSports] = useState<SportId[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newRegion, setNewRegion] = useState("");
   const [newType, setNewType] = useState<"academy" | "club">("academy");
+  const [newSports, setNewSports] = useState<SportId[]>([DEFAULT_SPORT]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -614,8 +623,16 @@ export function Settings() {
   useEffect(() => {
     setName(organization?.name ?? "");
     setRegion(organization?.region ?? "");
+    setSports(
+      organization?.sports?.length ? [...organization.sports] : [DEFAULT_SPORT]
+    );
     setSaveError("");
-  }, [organization?.name, organization?.region, organization?.organizationId]);
+  }, [
+    organization?.name,
+    organization?.region,
+    organization?.sports,
+    organization?.organizationId,
+  ]);
 
   async function saveOrganization(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -623,12 +640,20 @@ export function Settings() {
       setSaveError("أدخل اسم المؤسسة والمنطقة.");
       return;
     }
+    if (!sports.length) {
+      setSaveError("اختر رياضة واحدة على الأقل للمؤسسة.");
+      return;
+    }
     setSaving(true);
     setSaveError("");
     try {
       await api<unknown>("/organizations/current", {
         method: "PATCH",
-        body: JSON.stringify({ name: name.trim(), region: region.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          region: region.trim(),
+          sports,
+        }),
       });
       await invalidate();
       toast.success("تم حفظ إعدادات المؤسسة.");
@@ -651,6 +676,10 @@ export function Settings() {
       setCreateError("أدخل اسم المؤسسة والمنطقة.");
       return;
     }
+    if (!newSports.length) {
+      setCreateError("اختر رياضة واحدة على الأقل لمساحة العمل.");
+      return;
+    }
     setCreating(true);
     setCreateError("");
     try {
@@ -660,6 +689,7 @@ export function Settings() {
           name: newName.trim(),
           type: newType,
           region: newRegion.trim(),
+          sports: newSports,
         }),
       });
       await invalidate();
@@ -744,6 +774,38 @@ export function Settings() {
                 required
               />
             </label>
+            <fieldset className="sport-toggle-group">
+              <legend>الرياضات التي تعمل عليها المؤسسة</legend>
+              <div className="sport-toggle-list">
+                {SPORT_IDS.map(id => {
+                  const checked = sports.includes(id);
+                  return (
+                    <label
+                      key={id}
+                      className={`sport-toggle ${checked ? "is-selected" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={!owner || saving}
+                        onChange={() =>
+                          setSports(current =>
+                            current.includes(id)
+                              ? current.filter(item => item !== id)
+                              : [...current, id]
+                          )
+                        }
+                      />
+                      <span>{sportDefinition(id).name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <small className="muted">
+                تُقيد هذه القائمة رياضة اللاعبين والتقييمات؛ ويمنع الخادم إسناد
+                رياضة غير مفعّلة. إلغاء رياضة لا يحذف لاعبين أو سجلات قائمة.
+              </small>
+            </fieldset>
             {saveError ? (
               <p className="text-sm text-red-600">{saveError}</p>
             ) : null}
@@ -889,6 +951,33 @@ export function Settings() {
                 required
               />
             </label>
+            <fieldset className="sport-toggle-group">
+              <legend>الرياضات</legend>
+              <div className="sport-toggle-list">
+                {SPORT_IDS.map(id => {
+                  const checked = newSports.includes(id);
+                  return (
+                    <label
+                      key={id}
+                      className={`sport-toggle ${checked ? "is-selected" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setNewSports(current =>
+                            current.includes(id)
+                              ? current.filter(item => item !== id)
+                              : [...current, id]
+                          )
+                        }
+                      />
+                      <span>{sportDefinition(id).name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
             {createError ? (
               <p className="text-sm text-red-600">{createError}</p>
             ) : null}

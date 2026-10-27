@@ -2,6 +2,8 @@ import type { PhysicalTest, SkillValue } from "../../shared/athlete";
 
 type SeedPlayer = {
   name: string;
+  sport: "football" | "gymnastics";
+  gymnasticsCategory: "" | "womens_artistic" | "mens_artistic";
   age: number;
   nationality: string;
   position: (typeof import("../../shared/athlete").POSITIONS)[number];
@@ -31,6 +33,8 @@ export function demoPlayersForSeed(_now = new Date()): SeedPlayer[] {
   return [
     {
       name: "ميسي",
+      sport: "football",
+      gymnasticsCategory: "",
       age: 0,
       nationality: "غير معروف",
       position: "مهاجم",

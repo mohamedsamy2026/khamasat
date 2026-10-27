@@ -172,4 +172,133 @@ describe("isolated private note request boundaries", () => {
     expect(fixture.writes.transactions).toBe(0);
     expect(fixture.notes).toHaveLength(0);
   });
+
+  it("lets an authorized coach edit another coach's note without stealing attribution", async () => {
+    fixture.notes = [
+      {
+        id: 702,
+        playerId: 101,
+        organizationId: 11,
+        authorUserId: 9,
+        analysisId: null,
+        source: "coach",
+        authorName: "مدرب سابق",
+        text: "صياغة أولى من المدرب السابق",
+        originalText: "صياغة أولى من المدرب السابق",
+        requiredAction: "",
+        visibility: "academy_internal",
+        revisions: [],
+        lastEditedByName: "",
+        lastEditedByUserId: null,
+        createdAt: new Date("2026-10-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-10-01T00:00:00.000Z"),
+      },
+    ];
+
+    const response = await fetch(`${baseUrl}/notes/702`, {
+      method: "PATCH",
+      headers: requestHeaders(),
+      body: JSON.stringify({ text: "صياغة معدلة معتمدة من مدرب آخر" }),
+    });
+
+    expect(response.status).toBe(200);
+    const note = await response.json();
+    // The original author keeps attribution; the editor is recorded separately.
+    expect(note.authorName).toBe("مدرب سابق");
+    expect(note.originalText).toBe("صياغة أولى من المدرب السابق");
+    expect(note.lastEditedByName).toBe("مدرب اختبار معزول");
+    expect(note.lastEditedByUserId).toBe(7);
+    expect(note.revisions).toHaveLength(1);
+    expect(note.revisions[0]).toMatchObject({
+      authorName: "مدرب اختبار معزول",
+      editedByUserId: 7,
+      text: "صياغة معدلة معتمدة من مدرب آخر",
+    });
+    expect(fixture.notes[0]).toMatchObject({
+      authorName: "مدرب سابق",
+      authorUserId: 9,
+      lastEditedByName: "مدرب اختبار معزول",
+      lastEditedByUserId: 7,
+    });
+    const audit = fixture.audit.find(event => event.action === "note.updated");
+    expect(audit).toMatchObject({
+      actorUserId: 7,
+      metadata: expect.objectContaining({
+        noteAuthorName: "مدرب سابق",
+        originalAuthorUserId: 9,
+        editedByName: "مدرب اختبار معزول",
+        editedByUserId: 7,
+      }),
+    });
+  });
+
+  it("keeps shared automatic observations read-only", async () => {
+    fixture.notes = [
+      {
+        id: 703,
+        playerId: 101,
+        organizationId: 11,
+        authorUserId: null,
+        analysisId: null,
+        source: "automatic",
+        authorName: "تحليل آلي — ليس مدربًا",
+        text: "تغطية الرصد: 8 من 10 عينات",
+        originalText: "تغطية الرصد: 8 من 10 عينات",
+        requiredAction: "",
+        visibility: "shared",
+        revisions: [],
+        createdAt: new Date("2026-10-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-10-01T00:00:00.000Z"),
+      },
+    ];
+
+    const response = await fetch(`${baseUrl}/notes/703`, {
+      method: "PATCH",
+      headers: requestHeaders(),
+      body: JSON.stringify({ text: "محاولة تعديل سجل آلي" }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(fixture.notes[0].text).toBe("تغطية الرصد: 8 من 10 عينات");
+  });
+
+  it("blocks an academy that does not own the player from editing the note", async () => {
+    fixture.membership = {
+      organizationId: 12,
+      userId: 7,
+      role: "owner",
+      name: "أكاديمية أخرى",
+      type: "academy",
+      region: "الرياض",
+      isDemo: false,
+    };
+    fixture.notes = [
+      {
+        id: 704,
+        playerId: 101,
+        organizationId: 11,
+        authorUserId: 9,
+        analysisId: null,
+        source: "coach",
+        authorName: "مدرب سابق",
+        text: "ملاحظة أكاديمية أخرى",
+        originalText: "ملاحظة أكاديمية أخرى",
+        requiredAction: "",
+        visibility: "academy_internal",
+        revisions: [],
+        createdAt: new Date("2026-10-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-10-01T00:00:00.000Z"),
+      },
+    ];
+
+    const response = await fetch(`${baseUrl}/notes/704`, {
+      method: "PATCH",
+      headers: requestHeaders(12),
+      body: JSON.stringify({ text: "تعديل غير مصرح" }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(fixture.notes[0].text).toBe("ملاحظة أكاديمية أخرى");
+    expect(fixture.notes[0].revisions).toEqual([]);
+  });
 });

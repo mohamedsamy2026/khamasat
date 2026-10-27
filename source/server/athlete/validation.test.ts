@@ -11,6 +11,7 @@ import { validPoseResult } from "./route-test-support";
 
 const player = {
   name: "لاعب تجريبي",
+  sport: "football",
   age: 16,
   nationality: "سعودي",
   position: "مهاجم",
@@ -27,6 +28,43 @@ const player = {
 describe("athlete input validation", () => {
   it("accepts intentionally blank physical-test values for a newly created player", () => {
     expect(playerInputSchema.safeParse(player).success).toBe(true);
+  });
+
+  it("requires a registered sport and keeps the sport/group pair consistent", () => {
+    expect(playerInputSchema.safeParse({ ...player, sport: undefined }).success).toBe(
+      false
+    );
+    expect(playerInputSchema.safeParse({ ...player, sport: "swimming" }).success).toBe(
+      false
+    );
+    // A football player cannot claim a gymnastics category.
+    expect(
+      playerInputSchema.safeParse({
+        ...player,
+        gymnasticsCategory: "womens_artistic",
+      }).success
+    ).toBe(false);
+    // A football position is not valid for gymnastics.
+    expect(
+      playerInputSchema.safeParse({ ...player, sport: "gymnastics" }).success
+    ).toBe(false);
+    // Gymnastics requires a category and derives its group from it.
+    expect(
+      playerInputSchema.safeParse({
+        ...player,
+        sport: "gymnastics",
+        gymnasticsCategory: "womens_artistic",
+        position: "مهاجم",
+      }).success
+    ).toBe(false);
+    expect(
+      playerInputSchema.safeParse({
+        ...player,
+        sport: "gymnastics",
+        gymnasticsCategory: "womens_artistic",
+        position: "الجمباز الفني — سيدات",
+      }).success
+    ).toBe(true);
   });
 
   it("rejects a birth date inconsistent with the stated age", () => {

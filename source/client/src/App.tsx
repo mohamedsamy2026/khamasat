@@ -9,6 +9,7 @@ import Layout, { LoginPanel } from "./components/athlete/Layout";
 import Home from "./pages/Home";
 import Academies from "./pages/Academies";
 import Analysis from "./pages/Analysis";
+import Gymnastics from "./pages/Gymnastics";
 import PlayerProfile from "./pages/PlayerProfile";
 import Clubs, { Favorites } from "./pages/Clubs";
 import Reports from "./pages/Reports";
@@ -37,6 +38,11 @@ function Router() {
       <Route path="/analysis">
         <Layout>
           <Analysis />
+        </Layout>
+      </Route>
+      <Route path="/gymnastics">
+        <Layout>
+          <Gymnastics />
         </Layout>
       </Route>
       <Route path="/players/:id">

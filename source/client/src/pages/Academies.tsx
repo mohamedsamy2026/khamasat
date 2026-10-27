@@ -26,7 +26,17 @@ import type {
   SkillValue,
   Video,
 } from "@shared/athlete";
-import { PLAYER_LIMITS, POSITIONS, SKILLS } from "@shared/athlete";
+import { PLAYER_LIMITS } from "@shared/athlete";
+import {
+  DEFAULT_SPORT,
+  GYMNASTICS_CATEGORIES,
+  gymnasticsCategoryName,
+  isGymnasticsCategoryId,
+  isSportId,
+  sportDefinition,
+  type GymnasticsCategoryId,
+  type SportId,
+} from "@shared/sports";
 import { api, useApi, useAthlete } from "@/lib/athleteApi";
 import {
   Avatar,
@@ -47,6 +57,12 @@ import {
 } from "@/components/athlete/UI";
 import { hasDocumentedOverall } from "@/components/athlete/EvaluationSummary";
 
+/** Sports the organization actually operates; football is the safe default. */
+function configuredSports(sports: readonly string[] | undefined): SportId[] {
+  const list = (sports ?? []).filter(isSportId);
+  return list.length ? list : [DEFAULT_SPORT];
+}
+
 function PlayerEditor({
   player,
   onClose,
@@ -61,6 +77,8 @@ function PlayerEditor({
           name: player.name,
           age: player.age,
           nationality: player.nationality,
+          sport: player.sport,
+          gymnasticsCategory: player.gymnasticsCategory,
           position: player.position,
           foot: player.foot,
           height: player.height,
@@ -78,6 +96,10 @@ function PlayerEditor({
           name: "",
           age: 0,
           nationality: "",
+          // Defaults to the organization's first configured sport; the server
+          // rejects any sport the organization does not operate.
+          sport: organization?.sports?.[0] ?? DEFAULT_SPORT,
+          gymnasticsCategory: "",
           position: "",
           foot: "",
           height: 0,
@@ -95,6 +117,35 @@ function PlayerEditor({
   const [tab, setTab] = useState("basic");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const availableSports = configuredSports(organization?.sports);
+  const definition = sportDefinition(form.sport);
+  // A sport switch invalidates sport-specific vocabulary; never carry a
+  // football position into gymnastics (the server re-validates this too).
+  const changeSport = (next: SportId) => {
+    const groups = sportDefinition(next).groups;
+    setForm(prev => ({
+      ...prev,
+      sport: next,
+      gymnasticsCategory:
+        next === "gymnastics"
+          ? isGymnasticsCategoryId(prev.gymnasticsCategory)
+            ? prev.gymnasticsCategory
+            : "womens_artistic"
+          : "",
+      // Gymnastics stores the category name as the athlete's group, so the
+      // position must follow the category selection.
+      position:
+        next === "gymnastics"
+          ? gymnasticsCategoryName(
+              isGymnasticsCategoryId(prev.gymnasticsCategory)
+                ? prev.gymnasticsCategory
+                : "womens_artistic"
+            )
+          : (groups[0]?.id ?? ""),
+      // The column is required; a gymnast has no preferred kicking foot.
+      foot: next === "football" ? prev.foot : "لا ينطبق",
+    }));
+  };
   const change = <K extends keyof PlayerInput>(key: K, value: PlayerInput[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
   const updateTest = <K extends keyof PhysicalTest>(
@@ -189,31 +240,81 @@ function PlayerEditor({
               />
             </label>
             <label className="field">
-              المركز الرياضي
+              الرياضة
+              <select
+                required
+                value={form.sport}
+                onChange={e => {
+                  const next = e.target.value;
+                  if (isSportId(next)) changeSport(next);
+                }}
+              >
+                {availableSports.map(id => (
+                  <option key={id} value={id}>
+                    {sportDefinition(id).name}
+                  </option>
+                ))}
+              </select>
+              <small className="muted">
+                لا تظهر إلا الرياضات المفعّلة لمؤسستك. لا يمكن تغيير الرياضة بعد
+                وجود تحليلات أو تقييمات بدنية للاعب.
+              </small>
+            </label>
+            {form.sport === "gymnastics" ? (
+              <label className="field">
+                فئة الجمباز
+                <select
+                  required
+                  value={form.gymnasticsCategory}
+                  onChange={e => {
+                    const next = e.target.value;
+                    if (!isGymnasticsCategoryId(next)) return;
+                    setForm(prev => ({
+                      ...prev,
+                      gymnasticsCategory: next as GymnasticsCategoryId,
+                      position: gymnasticsCategoryName(next),
+                    }));
+                  }}
+                >
+                  {GYMNASTICS_CATEGORIES.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <small className="muted">
+                  تحدد الفئة أجهزة اللاعب وترتيبها في قسم الجمباز.
+                </small>
+              </label>
+            ) : null}
+            <label className="field">
+              {definition.terminology.group}
               <select
                 required
                 value={form.position}
                 onChange={e => change("position", e.target.value)}
               >
-                <option value="">اختر المركز</option>
-                {POSITIONS.map(p => (
-                  <option key={p}>{p}</option>
+                <option value="">اختر {definition.terminology.group}</option>
+                {definition.groups.map(group => (
+                  <option key={group.id}>{group.id}</option>
                 ))}
               </select>
             </label>
-            <label className="field">
-              القدم المفضلة
-              <select
-                required
-                value={form.foot}
-                onChange={e => change("foot", e.target.value)}
-              >
-                <option value="">اختر القدم</option>
-                <option>اليمنى</option>
-                <option>اليسرى</option>
-                <option>كلتا القدمين</option>
-              </select>
-            </label>
+            {form.sport === "football" ? (
+              <label className="field">
+                القدم المفضلة
+                <select
+                  required
+                  value={form.foot}
+                  onChange={e => change("foot", e.target.value)}
+                >
+                  <option value="">اختر القدم</option>
+                  <option>اليمنى</option>
+                  <option>اليسرى</option>
+                  <option>كلتا القدمين</option>
+                </select>
+              </label>
+            ) : null}
             <label className="field">
               الطول (سم)
               <input
@@ -373,9 +474,12 @@ export default function Academies() {
   const { organization, session, setOrgId, orgId } = useAthlete();
   const isAcademy = organization?.type === "academy";
   const isDemo = session?.mode === "demo";
+  const availableSports = configuredSports(organization?.sports);
   const playersQuery = useApi<PlayerCard[]>("/players", isAcademy);
   const players = playersQuery.data ?? [];
   const [search, setSearch] = useState("");
+  const [sportFilter, setSportFilter] = useState<SportId | "">("");
+  const filterDefinition = sportDefinition(sportFilter || DEFAULT_SPORT);
   const [position, setPosition] = useState("");
   const [age, setAge] = useState("");
   const [level, setLevel] = useState("");
@@ -468,6 +572,7 @@ export default function Academies() {
   const filtered = players.filter(
     p =>
       (!search || `${p.name} ${p.position}`.includes(search)) &&
+      (!sportFilter || p.sport === sportFilter) &&
       (!position || p.position === position) &&
       (!age || (p.age > 0 && (age === "u16" ? p.age < 16 : p.age >= 16))) &&
       (!level ||
@@ -580,13 +685,28 @@ export default function Academies() {
             />
           </div>
           <select
-            aria-label="المركز"
+            aria-label="الرياضة"
+            value={sportFilter}
+            onChange={e => {
+              setSportFilter(isSportId(e.target.value) ? e.target.value : "");
+              setPosition("");
+            }}
+          >
+            <option value="">جميع الرياضات</option>
+            {availableSports.map(id => (
+              <option key={id} value={id}>
+                {sportDefinition(id).name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label={filterDefinition.terminology.group}
             value={position}
             onChange={e => setPosition(e.target.value)}
           >
-            <option value="">جميع المراكز</option>
-            {POSITIONS.map(p => (
-              <option key={p}>{p}</option>
+            <option value="">جميع {filterDefinition.terminology.groups}</option>
+            {filterDefinition.groups.map(group => (
+              <option key={group.id}>{group.id}</option>
             ))}
           </select>
           <select
@@ -626,6 +746,7 @@ export default function Academies() {
                 setAge("");
                 setPosition("");
                 setLevel("");
+                setSportFilter("");
                 setTab("all");
               }}
             >
@@ -640,7 +761,8 @@ export default function Academies() {
                 <tr>
                   <th>اللاعب</th>
                   <th>العمر</th>
-                  <th>المركز</th>
+                  <th>الرياضة</th>
+                  <th>المركز / الفئة</th>
                   <th>التقييم العام</th>
                   <th>الجلسات الموثقة</th>
                   <th>آخر تحليل</th>
@@ -662,7 +784,12 @@ export default function Academies() {
                     <td>
                       {p.isDemo && p.age === 0 ? "غير منسوب" : `${p.age} سنة`}
                     </td>
-                    <td>{p.position}</td>
+                    <td>{sportDefinition(p.sport).name}</td>
+                    <td>
+                      {p.sport === "gymnastics" && p.gymnasticsCategory
+                        ? `${p.position} · ${gymnasticsCategoryName(p.gymnasticsCategory)}`
+                        : p.position}
+                    </td>
                     <td>
                       <span className="score-tag">
                         {hasDocumentedOverall(p.evaluation)

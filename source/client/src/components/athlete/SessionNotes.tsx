@@ -69,10 +69,29 @@ function NoteCard({
           >
             <UserRound aria-hidden="true" size={15} /> {sourceLabel(note)}
           </span>
-          <strong>{note.authorName || "غير متوفر من الخادم"}</strong>
+          <strong className="note-author">
+            {note.authorName || "غير متوفر من الخادم"}
+          </strong>
+          <small className="note-author-role">
+            {note.source === "automatic"
+              ? "رصد آلي — غير قابل للتعديل كملاحظة مدرب"
+              : "الكاتب الأصلي للملاحظة"}
+          </small>
         </div>
         <time dateTime={note.createdAt}>{formatDate(note.createdAt)}</time>
       </header>
+      {note.lastEditedByName || note.lastEditedByUserId ? (
+        <p className="note-attribution">
+          <History aria-hidden="true" size={15} />
+          <span>
+            حرّرها لاحقًا: <strong>{note.lastEditedByName || "مدرب"}</strong>
+            {note.lastEditedByName && note.lastEditedByName !== note.authorName
+              ? " — مع الاحتفاظ بنسبة النص إلى كاتبه الأصلي"
+              : ""}
+            {note.updatedAt ? ` · ${formatDate(note.updatedAt)}` : ""}
+          </span>
+        </p>
+      ) : null}
       <dl className="session-note-context">
         <div>
           <dt>الجلسة</dt>
@@ -145,13 +164,19 @@ function NoteCard({
         <>
           <p className="session-note-text">{note.text}</p>
           {canEdit ? (
-            <button
-              className="btn btn-ghost btn-sm"
-              type="button"
-              onClick={() => setEditing(true)}
-            >
-              <Pencil size={15} /> تعديل المدرب
-            </button>
+            <div className="note-edit-actions">
+              <button
+                className="btn btn-ghost btn-sm"
+                type="button"
+                onClick={() => setEditing(true)}
+              >
+                <Pencil size={15} /> تعديل الملاحظة
+              </button>
+              <small className="muted">
+                التعديل يوثق اسمك كمنقّح ويُبقي نسبة النص إلى كاتبه الأصلي،
+                والخادم يتحقق من صلاحيتك على اللاعب.
+              </small>
+            </div>
           ) : null}
         </>
       )}
@@ -169,13 +194,16 @@ function NoteCard({
             <ol>
               {note.revisions.map((revision, index) => (
                 <li key={`${revision.editedAt}-${index}`}>
-                  <strong>
-                    {revision.authorName || "غير متوفر من الخادم"}
-                  </strong>{" "}
-                  · {formatDate(revision.editedAt)}
+                  <span className="note-revision-meta">
+                    حرّرها:{" "}
+                    <strong>
+                      {revision.authorName || "غير متوفر من الخادم"}
+                    </strong>{" "}
+                    · {formatDate(revision.editedAt)}
+                  </span>
                   <span>{revision.text}</span>
-                  <small>
-                    الإجراء: {revision.requiredAction || "غير محدد"}
+                  <small className="note-revision-action">
+                    الإجراء المطلوب: {revision.requiredAction || "غير محدد"}
                   </small>
                 </li>
               ))}

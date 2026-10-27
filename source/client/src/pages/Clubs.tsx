@@ -17,12 +17,20 @@ import {
 import { toast } from "sonner";
 import {
   DEMO_LABEL,
-  POSITIONS,
   SKILLS,
   type AccessRequest,
   type PlayerCard,
   type Video,
 } from "@shared/athlete";
+import {
+  ALL_GROUPS,
+  DEFAULT_SPORT,
+  SPORT_IDS,
+  gymnasticsCategoryName,
+  isSportId,
+  sportDefinition,
+  type SportId,
+} from "@shared/sports";
 import { api, useApi, useAthlete } from "@/lib/athleteApi";
 import {
   Avatar,
@@ -147,7 +155,11 @@ function TalentCard({
             <p className="muted text-sm">
               {isVideoSample
                 ? "ملف عرض — البيانات الأساسية غير متوفرة"
-                : `${player.age} سنة · ${player.position}`}
+                : `${player.age} سنة · ${sportDefinition(player.sport).name} · ${
+                    player.sport === "gymnastics" && player.gymnasticsCategory
+                      ? gymnasticsCategoryName(player.gymnasticsCategory)
+                      : player.position
+                  }`}
             </p>
             <p className="muted text-sm truncate">{player.academyName}</p>
           </div>
@@ -418,6 +430,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
   const [height, setHeight] = useState<RangeValue>([140, 210]);
   const [weight, setWeight] = useState<RangeValue>([35, 110]);
   const [positions, setPositions] = useState<Set<string>>(new Set());
+  const [sports, setSports] = useState<Set<SportId>>(new Set());
   const [skills, setSkills] = useState<Set<string>>(new Set());
   const [region, setRegion] = useState("");
   const [foot, setFoot] = useState("");
@@ -451,7 +464,12 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
     const filtered = players.filter(player => {
       const matchesSearch =
         !normalizedSearch ||
-        [player.name, player.position, player.academyName].some(value =>
+        [
+          player.name,
+          player.position,
+          player.academyName,
+          sportDefinition(player.sport).name,
+        ].some(value =>
           value.toLocaleLowerCase("ar-SA").includes(normalizedSearch)
         );
       const referenceOnly = player.isDemo && player.age === 0;
@@ -464,8 +482,14 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
       const matchesWeight = referenceOnly
         ? weight[0] === 35 && weight[1] === 110
         : player.weight >= weight[0] && player.weight <= weight[1];
+      const matchesSport = sports.size === 0 || sports.has(player.sport);
       const matchesPosition =
-        positions.size === 0 || positions.has(player.position);
+        positions.size === 0 ||
+        positions.has(
+          player.sport === "gymnastics" && player.gymnasticsCategory
+            ? gymnasticsCategoryName(player.gymnasticsCategory)
+            : player.position
+        );
       const matchesSkills =
         skills.size === 0 ||
         [...skills].every(skill =>
@@ -479,6 +503,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
         matchesAge &&
         matchesHeight &&
         matchesWeight &&
+        matchesSport &&
         matchesPosition &&
         matchesSkills &&
         matchesRegion &&
@@ -515,6 +540,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
     search,
     skills,
     sort,
+    sports,
     weight,
   ]);
 
@@ -743,9 +769,43 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
       </Panel>
 
       <div className="grid-2">
-        <Panel title="المركز" icon={ChevronDown}>
+        <Panel title="الرياضة" icon={Filter}>
           <div className="section-stack">
-            {POSITIONS.map(position => (
+            {SPORT_IDS.map(id => (
+              <label className="flex items-center gap-2" key={id}>
+                <input
+                  type="checkbox"
+                  checked={sports.has(id)}
+                  onChange={() =>
+                    setSports(current => {
+                      const next = new Set(current);
+                      if (next.has(id)) next.delete(id);
+                      else next.add(id);
+                      return next;
+                    })
+                  }
+                />
+                <span>{sportDefinition(id).name}</span>
+              </label>
+            ))}
+            {!sports.size ? (
+              <small className="muted">
+                كل الرياضات معروضة. اختيار رياضة يقيد بطاقات الاكتشاف.
+              </small>
+            ) : null}
+          </div>
+        </Panel>
+        <Panel
+          title={
+            sports.size === 1
+              ? sportDefinition([...sports][0] ?? DEFAULT_SPORT).terminology
+                  .positions
+              : "المركز أو الفئة"
+          }
+          icon={ChevronDown}
+        >
+          <div className="section-stack">
+            {ALL_GROUPS.map(position => (
               <label className="flex items-center gap-2" key={position}>
                 <input
                   type="checkbox"

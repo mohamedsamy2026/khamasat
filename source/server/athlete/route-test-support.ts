@@ -5,6 +5,11 @@ import {
   exercisePlans,
   memberships,
   notes,
+  organizations,
+  playerEmergencyContacts,
+  playerHealthProfiles,
+  playerPhysicalAssessments,
+  playerSensitiveGrants,
   players,
   videoChunks,
   videos,
@@ -29,6 +34,7 @@ export type AthleteRouteFixture = {
     type: "academy" | "club";
     region: string;
     isDemo: boolean;
+    sports?: string[];
   } | null;
   players: Array<Record<string, any>>;
   videos: Array<Record<string, any>>;
@@ -38,6 +44,11 @@ export type AthleteRouteFixture = {
   exercisePlans: Array<Record<string, any>>;
   grants: Array<Record<string, any>>;
   audit: Array<Record<string, any>>;
+  organizations: Array<Record<string, any>>;
+  healthProfiles: Array<Record<string, any>>;
+  emergencyContacts: Array<Record<string, any>>;
+  sensitiveGrants: Array<Record<string, any>>;
+  assessments: Array<Record<string, any>>;
   writes: {
     transactions: number;
     inserts: Array<{ table: unknown; values: unknown }>;
@@ -46,6 +57,8 @@ export type AthleteRouteFixture = {
   nextVideoId: number;
   nextAnalysisId: number;
   nextExercisePlanId: number;
+  nextAssessmentId: number;
+  nextSensitiveGrantId: number;
 };
 
 export function testPlayer(
@@ -57,6 +70,8 @@ export function testPlayer(
     name: "لاعب اختبار",
     age: 16,
     nationality: "سعودي",
+    sport: "football",
+    gymnasticsCategory: "",
     position: "مهاجم",
     foot: "أيمن",
     height: 175,
@@ -74,6 +89,7 @@ export function testPlayer(
     weaknesses: [],
     physicalTests: [],
     history: [],
+    demoArchived: false,
     createdAt: new Date("2026-01-01T00:00:00.000Z"),
     ...overrides,
   };
@@ -158,6 +174,8 @@ export function createAthleteRouteFixture(
       type: "academy",
       region: "الرياض",
       isDemo: false,
+      // The organization-level sport switch is enforced on player writes.
+      sports: ["football", "gymnastics"],
     },
     players: [testPlayer()],
     videos: [],
@@ -167,10 +185,42 @@ export function createAthleteRouteFixture(
     exercisePlans: [],
     grants: [],
     audit: [],
+    organizations: [
+      {
+        id: 11,
+        name: "أكاديمية اختبار",
+        type: "academy",
+        region: "الرياض",
+        isDemo: false,
+        sports: ["football", "gymnastics"],
+      },
+      {
+        id: 20,
+        name: "نادي اختبار",
+        type: "club",
+        region: "الرياض",
+        isDemo: false,
+        sports: ["football", "gymnastics"],
+      },
+      {
+        id: 21,
+        name: "نادٍ آخر",
+        type: "club",
+        region: "جدة",
+        isDemo: false,
+        sports: ["football"],
+      },
+    ],
+    healthProfiles: [],
+    emergencyContacts: [],
+    sensitiveGrants: [],
+    assessments: [],
     writes: { transactions: 0, inserts: [], playerUpdates: [] },
     nextVideoId: 302,
     nextAnalysisId: 501,
     nextExercisePlanId: 801,
+    nextAssessmentId: 901,
+    nextSensitiveGrantId: 951,
     ...overrides,
   };
 }
@@ -178,7 +228,7 @@ export function createAthleteRouteFixture(
 function rowsFor(
   fixture: AthleteRouteFixture,
   table: unknown,
-  selection: Record<string, unknown> | undefined
+  selection?: Record<string, unknown>
 ): Array<Record<string, any>> {
   if (table === memberships)
     return fixture.membership ? [{ ...fixture.membership }] : [];
@@ -196,7 +246,108 @@ function rowsFor(
   if (table === notes) return fixture.notes;
   if (table === exercisePlans) return fixture.exercisePlans;
   if (table === accessGrants) return fixture.grants;
+  if (table === organizations) return fixture.organizations;
+  if (table === playerHealthProfiles) return fixture.healthProfiles;
+  if (table === playerEmergencyContacts) return fixture.emergencyContacts;
+  if (table === playerSensitiveGrants) return fixture.sensitiveGrants;
+  if (table === playerPhysicalAssessments) return fixture.assessments;
   return [];
+}
+
+/**
+ * Minimal `where` support for the test double: it applies the simple
+ * `eq(column, value)` conjunctions used by the routes. Anything more complex is
+ * deliberately left unfiltered instead of being guessed.
+ */
+type EqualityFilter = { column: string; value: unknown };
+
+function flattenCondition(where: any): Array<Record<string, any>> {
+  const flat: Array<Record<string, any>> = [];
+  const walk = (node: any): void => {
+    if (!node || typeof node !== "object") return;
+    const name = node.constructor?.name;
+    if (name === "Param") {
+      flat.push({ kind: "param", value: node.value });
+      return;
+    }
+    if (typeof node.name === "string" && node.dataType !== undefined) {
+      flat.push({ kind: "column", name: node.name });
+      return;
+    }
+    if (Array.isArray(node.queryChunks)) {
+      for (const chunk of node.queryChunks) walk(chunk);
+      return;
+    }
+    if (typeof node.value === "string") {
+      flat.push({ kind: "text", text: node.value });
+      return;
+    }
+    if (Array.isArray(node.value)) {
+      flat.push({
+        kind: "text",
+        text: node.value
+          .filter((part: unknown) => typeof part === "string")
+          .join(""),
+      });
+    }
+  };
+  walk(where);
+  return flat;
+}
+
+function equalityFilters(where: any): EqualityFilter[] | null {
+  if (!where) return null;
+  const flat = flattenCondition(where);
+  const filters: EqualityFilter[] = [];
+  for (let index = 0; index < flat.length; index += 1) {
+    const item = flat[index]!;
+    if (item.kind !== "column") continue;
+    let cursor = index + 1;
+    let operator = "";
+    let value: unknown;
+    let hasValue = false;
+    while (cursor < flat.length) {
+      const next = flat[cursor]!;
+      if (next.kind === "text") {
+        operator += next.text;
+        cursor += 1;
+        continue;
+      }
+      if (next.kind === "param") {
+        value = next.value;
+        hasValue = true;
+      }
+      break;
+    }
+    if (operator.replace(/[()\s]/g, "") !== "=" || !hasValue) return null;
+    filters.push({ column: String(item.name), value });
+    index = cursor;
+  }
+  return filters.length ? filters : null;
+}
+
+function rowValue(row: Record<string, any>, column: string): unknown {
+  if (column in row) return row[column];
+  // Joined selections are returned as { player: {...}, academyName } by the
+  // fixture, so a filter on the joined table's column must look inside.
+  for (const value of Object.values(row)) {
+    if (value && typeof value === "object" && column in value)
+      return (value as Record<string, unknown>)[column];
+  }
+  return undefined;
+}
+
+function filterRows(
+  rows: Array<Record<string, any>>,
+  where: unknown
+): Array<Record<string, any>> {
+  const filters = equalityFilters(where);
+  if (!filters) return rows;
+  return rows.filter(row =>
+    filters.every(
+      filter => String(rowValue(row, filter.column)) === String(filter.value)
+    )
+  );
 }
 
 /** Creates only the chain methods called by the athlete routes under test. */
@@ -204,13 +355,17 @@ export function createAthleteRouteDb(fixture: AthleteRouteFixture): any {
   const db: any = {
     select(selection?: Record<string, unknown>) {
       let table: unknown;
+      let condition: unknown;
       const chain: any = {
         from(value: unknown) {
           table = value;
           return chain;
         },
         innerJoin: () => chain,
-        where: () => chain,
+        where(value: unknown) {
+          condition = value;
+          return chain;
+        },
         limit: () => chain,
         for: () => chain,
         orderBy: () => chain,
@@ -218,10 +373,11 @@ export function createAthleteRouteDb(fixture: AthleteRouteFixture): any {
           resolve: (rows: Array<Record<string, any>>) => unknown,
           reject?: (reason: unknown) => unknown
         ) {
-          return Promise.resolve(rowsFor(fixture, table, selection)).then(
-            resolve,
-            reject
-          );
+          const rows = filterRows(
+            rowsFor(fixture, table, selection),
+            condition
+          ).map(row => ({ ...row }));
+          return Promise.resolve(rows).then(resolve, reject);
         },
       };
       return chain;
@@ -230,6 +386,30 @@ export function createAthleteRouteDb(fixture: AthleteRouteFixture): any {
       return {
         values: async (values: any) => {
           fixture.writes.inserts.push({ table, values });
+          if (table === players) {
+            const id =
+              fixture.players.reduce(
+                (max, row) => Math.max(max, Number(row.id) || 0),
+                0
+              ) + 1;
+            const row = {
+              demoArchived: false,
+              photoKey: "",
+              overall: 0,
+              improvement: 0,
+              history: [],
+              strengths: [],
+              weaknesses: [],
+              skills: [],
+              physicalTests: [],
+              lastAnalysisAt: null,
+              createdAt: new Date("2026-10-01T00:00:00.000Z"),
+              ...values,
+              id,
+            };
+            fixture.players.push(row);
+            return [{ insertId: id }];
+          }
           if (table === videos) {
             const id = fixture.nextVideoId++;
             fixture.videos.push({ ...values, id });
@@ -262,6 +442,28 @@ export function createAthleteRouteDb(fixture: AthleteRouteFixture): any {
             fixture.audit.push({ ...values });
             return [{ insertId: fixture.audit.length }];
           }
+          if (table === playerPhysicalAssessments) {
+            const rows = Array.isArray(values) ? values : [values];
+            const startId = fixture.nextAssessmentId;
+            fixture.assessments.push(
+              ...rows.map((row, index) => ({ ...row, id: startId + index }))
+            );
+            fixture.nextAssessmentId += rows.length;
+            return [{ insertId: startId }];
+          }
+          if (table === playerSensitiveGrants) {
+            const id = fixture.nextSensitiveGrantId++;
+            fixture.sensitiveGrants.push({ ...values, id });
+            return [{ insertId: id }];
+          }
+          if (table === playerHealthProfiles) {
+            fixture.healthProfiles.push({ ...values, id: 1 });
+            return [{ insertId: 1 }];
+          }
+          if (table === playerEmergencyContacts) {
+            fixture.emergencyContacts.push({ ...values, id: 1 });
+            return [{ insertId: 1 }];
+          }
           return [{ insertId: 1 }];
         },
       };
@@ -270,28 +472,32 @@ export function createAthleteRouteDb(fixture: AthleteRouteFixture): any {
       return {
         set(values: Record<string, any>) {
           return {
-            where: async () => {
-              if (table === players && fixture.players[0]) {
-                Object.assign(fixture.players[0], values);
-                fixture.writes.playerUpdates.push(values);
-              }
-              if (table === analyses && fixture.analyses[0]) {
-                Object.assign(fixture.analyses.at(-1)!, values);
-              }
-              if (table === notes && fixture.notes[0]) {
-                Object.assign(fixture.notes.at(-1)!, values);
-              }
-              if (table === exercisePlans && fixture.exercisePlans[0]) {
-                Object.assign(fixture.exercisePlans.at(-1)!, values);
-              }
+            where: async (condition?: unknown) => {
+              const rows = rowsFor(fixture, table);
+              const matched = filterRows(rows, condition);
+              const targets = matched.length ? matched : rows.slice(-1);
+              for (const target of targets) Object.assign(target, values);
+              if (table === players) fixture.writes.playerUpdates.push(values);
               return [];
             },
           };
         },
       };
     },
-    delete() {
-      return { where: async () => [] };
+    delete(table?: unknown) {
+      return {
+        where: async (condition?: unknown) => {
+          const rows = rowsFor(fixture, table);
+          const matched = filterRows(rows, condition);
+          if (table === playerPhysicalAssessments) {
+            for (const row of matched) {
+              const index = fixture.assessments.indexOf(row);
+              if (index >= 0) fixture.assessments.splice(index, 1);
+            }
+          }
+          return [];
+        },
+      };
     },
   };
   db.transaction = async (callback: (tx: any) => Promise<unknown>) => {

@@ -1,0 +1,632 @@
+/* Sport-specific surfaces: standardized indicators, sensitive athlete data and
+   the gymnastics section. The palette and radii mirror the existing identity. */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.form-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  color: #075b44;
+  background: #ddf7ea;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ------------------------- Standardized indicators ------------------------ */
+
+.physical-assessments {
+  display: grid;
+  gap: 16px;
+}
+
+.physical-assessments.is-compact {
+  gap: 12px;
+}
+
+.physical-assessments-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.physical-assessments-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #0b3a2f;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.physical-assessments-heading h3 svg {
+  color: #087b58;
+}
+
+.physical-assessments-heading p {
+  margin: 6px 0 0;
+  max-width: 70ch;
+  color: #4f6a62;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.provisional-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #f0d9a8;
+  border-radius: 10px;
+  color: #6b4d11;
+  background: #fffaf0;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.provisional-notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #a97a17;
+}
+
+.physical-assessment-form {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #d8e8e2;
+  border-radius: 12px;
+  background: #f7fbf9;
+}
+
+.indicator-picker {
+  display: grid;
+  gap: 13px;
+}
+
+.indicator-group {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.indicator-group legend {
+  padding: 0;
+  color: #143f34;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.indicator-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 9px;
+}
+
+.indicator-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 11px;
+  border: 1px solid #dbe9e4;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.indicator-option.is-selected {
+  border-color: #1d8b63;
+  background: #f0fbf5;
+  box-shadow: 0 0 0 2px rgba(29, 139, 99, 0.12);
+}
+
+.indicator-option input {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin-top: 3px;
+  accent-color: #087b58;
+}
+
+.indicator-option span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.indicator-option strong {
+  color: #163f35;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.indicator-option small {
+  color: #5a716a;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.indicator-values {
+  display: grid;
+  gap: 10px;
+}
+
+.indicator-value-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.6fr) minmax(
+      120px,
+      0.6fr
+    );
+  gap: 10px;
+  align-items: end;
+  padding: 11px;
+  border: 1px solid #e0ece7;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.indicator-value-title {
+  display: grid;
+  gap: 5px;
+  grid-column: 1 / -1;
+}
+.indicator-value-title strong {
+  color: #163f35;
+  font-size: 15px;
+}
+.indicator-value-title .metric-code {
+  width: fit-content;
+}
+.indicator-note {
+  grid-column: 1 / -1;
+}
+
+.assessment-session-list {
+  display: grid;
+  gap: 12px;
+}
+
+.assessment-session {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #dbe9e4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.assessment-session > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.assessment-session > header strong {
+  color: #123f35;
+  font-size: 15.5px;
+}
+.assessment-session > header span {
+  color: #5b726b;
+  font-size: 13.5px;
+}
+
+.assessment-session ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assessment-session li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 9px;
+  background: #f4f9f7;
+}
+
+.assessment-session li > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.assessment-session li > div strong {
+  color: #1c463b;
+  font-size: 15px;
+}
+.assessment-session li > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #4f6a62;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.assessment-value {
+  color: #083f31;
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.assessment-value small {
+  margin-inline-start: 4px;
+  color: #4f6a62;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.assessment-delete {
+  color: #a2442f;
+}
+.provisional-chip {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #7a5a12;
+  background: #fff6e2;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* --------------------------- Sensitive athlete data ----------------------- */
+
+.health-panel {
+  display: grid;
+  gap: 15px;
+}
+
+.sensitive-privacy-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 15px;
+  border: 1px solid #cfe3da;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f2faf6, #ffffff);
+}
+
+.sensitive-privacy-banner svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #087b58;
+}
+.sensitive-privacy-banner strong {
+  color: #0d3f31;
+  font-size: 16px;
+}
+.sensitive-privacy-banner p {
+  margin: 5px 0 0;
+  color: #4b655d;
+  font-size: 14.5px;
+  line-height: 1.65;
+}
+
+.sensitive-columns {
+  align-items: start;
+}
+.sensitive-form {
+  display: grid;
+  gap: 12px;
+}
+.sensitive-form textarea {
+  min-height: 78px;
+}
+.sensitive-form label {
+  font-size: 15px;
+}
+
+.sensitive-readonly {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+.sensitive-readonly > div {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #f3f8f6;
+}
+.sensitive-readonly dt {
+  color: #5b726b;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.sensitive-readonly dd {
+  margin: 4px 0 0;
+  color: #1d4639;
+  font-size: 15.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sensitive-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e6d9c4;
+  border-radius: 11px;
+  background: #fdf8f1;
+}
+
+.sensitive-locked svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #9a6a1c;
+}
+.sensitive-locked strong {
+  color: #5c431a;
+  font-size: 15.5px;
+}
+.sensitive-locked p {
+  margin: 5px 0 0;
+  color: #6d5a38;
+  font-size: 14.5px;
+  line-height: 1.65;
+}
+
+.scope-table-wrap {
+  overflow-x: auto;
+}
+.scope-table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+}
+.scope-table th,
+.scope-table td {
+  padding: 10px 11px;
+  border-bottom: 1px solid #e6efeb;
+  text-align: start;
+  font-size: 14.5px;
+  vertical-align: middle;
+}
+.scope-table th {
+  color: #42605a;
+  background: #f4f9f7;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+.scope-table td strong {
+  display: block;
+  color: #143f34;
+  font-size: 15px;
+}
+.scope-table td small {
+  display: block;
+  margin-top: 2px;
+  color: #63796f;
+  font-size: 12.5px;
+}
+
+.scope-badge {
+  display: inline-block;
+  margin-inline-end: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: #8d3423;
+  background: #f6e7e4;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.scope-badge.is-active {
+  color: #05603f;
+  background: #ddf5e9;
+}
+
+.privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0 0;
+  color: #5a4a2c;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.privacy-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #a97a17;
+}
+
+/* ------------------------------ Gymnastics -------------------------------- */
+
+.gymnastics-page {
+  display: grid;
+  gap: 18px;
+}
+
+.gymnastics-apparatus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 11px;
+}
+
+.apparatus-card {
+  display: grid;
+  gap: 6px;
+  padding: 13px;
+  border: 1px solid #dbe9e4;
+  border-radius: 12px;
+  background: #fff;
+  text-align: start;
+  cursor: pointer;
+}
+
+.apparatus-card:hover {
+  border-color: #b7dccd;
+}
+.apparatus-card.is-selected {
+  border-color: #1d8b63;
+  background: #f2fbf6;
+  box-shadow: 0 0 0 2px rgba(29, 139, 99, 0.12);
+}
+
+.apparatus-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.apparatus-card h3 {
+  margin: 0;
+  color: #0f3f33;
+  font-size: 17px;
+  line-height: 1.4;
+}
+.apparatus-order {
+  min-width: 28px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #fff;
+  background: #0f7d57;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+.apparatus-card p {
+  margin: 0;
+  color: #4f6a62;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.apparatus-card small {
+  color: #63796f;
+  font-size: 13px;
+}
+
+.gymnastics-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.gymnastics-rules {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-inline-start: 20px;
+  color: #33564b;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.gymnastics-history-item {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 11px 12px;
+  border-radius: 9px;
+  background: #f3f8f6;
+}
+.gymnastics-history-item dt {
+  color: #5b726b;
+  font-size: 13px;
+}
+.gymnastics-history-item dd {
+  margin: 0 0 6px;
+  color: #1d4639;
+  font-size: 15px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.gymnast-choice-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  margin-top: 11px;
+}
+
+/* --------------------------- Organization sports -------------------------- */
+
+.sport-toggle-group {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #dbe9e4;
+  border-radius: 10px;
+  background: #f7fbf9;
+}
+.sport-toggle-group legend {
+  padding: 0 4px;
+  color: #143f34;
+  font-size: 14.5px;
+  font-weight: 800;
+}
+.sport-toggle-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.sport-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #d5e6df;
+  border-radius: 999px;
+  background: #fff;
+  color: #1d4a3e;
+  font-size: 15px;
+  cursor: pointer;
+}
+.sport-toggle.is-selected {
+  border-color: #1d8b63;
+  background: #effaf4;
+  color: #0b4a34;
+  font-weight: 800;
+}
+.sport-toggle input {
+  width: 17px;
+  height: 17px;
+  accent-color: #087b58;
+}
+
+@media (max-width: 900px) {
+  .indicator-value-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gymnastics-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .indicator-value-row,
+  .assessment-session li {
+    grid-template-columns: 1fr;
+  }
+  .physical-assessments-heading {
+    flex-direction: column;
+  }
+  .assessment-delete {
+    justify-self: end;
+  }
+}

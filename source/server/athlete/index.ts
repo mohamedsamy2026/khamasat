@@ -20,6 +20,10 @@ import {
   memberships,
   notes,
   organizations,
+  playerEmergencyContacts,
+  playerHealthProfiles,
+  playerPhysicalAssessments,
+  playerSensitiveGrants,
   players,
   videoChunks,
   videos,
@@ -32,6 +36,33 @@ import {
   type VideoSource,
 } from "../../shared/athlete";
 import type { PoseResult } from "../../shared/pose";
+import {
+  SPORT_IDS,
+  apparatusForCategory,
+  apparatusName,
+  apparatusOrderForCategory,
+  gymnasticsCategoryName,
+  indicatorsFor,
+  isGymnasticsCategoryId,
+  isSportId,
+  sportDefinition,
+  type GymnasticsCategoryId,
+  type SportId,
+} from "../../shared/sports";
+import {
+  PHYSICAL_INDICATOR_VERSION,
+  assessmentSessionKey,
+  type PhysicalAssessment,
+} from "../../shared/physical-assessment";
+import {
+  SENSITIVE_SCOPES,
+  isSensitiveScope,
+  type EmergencyContact,
+  type HealthProfile,
+  type SensitiveAccessState,
+  type SensitiveGrant,
+  type SensitiveScope,
+} from "../../shared/health";
 import {
   BadRequestError,
   ForbiddenError,
@@ -72,34 +103,56 @@ import {
   historyPoints,
   serializeAccessRequest,
   serializeAnalysis,
+  serializeEmergencyContact,
   serializeExercisePlan,
+  serializeHealthProfile,
   serializeNote,
+  serializePhysicalAssessment,
   serializePlayer,
   serializePlayerCard,
+  serializeSensitiveGrant,
   serializeVideo,
   type VideoAnalysisState,
 } from "./serializers";
 import { demoPlayersForSeed } from "./seed";
 import { normalizePoseResult } from "./poseNormalization";
 import {
+  canManageSensitiveGrants,
+  canWriteSensitiveData,
+  emptyScopeState,
+  isGrantableOrganization,
+} from "./sensitive";
+import {
+  assertApparatusForSport,
+  assertSkillBelongsToSport,
+  assertSportChangeAllowed,
+  normalizePlayerSport,
+  organizationSupportsSport,
+} from "./sport-rules";
+import {
   exportVerifiedReportCsv,
   exportVerifiedReportHtml,
 } from "./verifiedReportExport";
 import {
   analysisInputSchema,
+  emergencyContactSchema,
   exercisePlanInputSchema,
   exercisePlanPatchSchema,
   exportQuerySchema,
+  healthInputSchema,
   maxVideoBytes,
   noteInputSchema,
   notePatchSchema,
   organizationInputSchema,
   organizationPatchSchema,
+  physicalAssessmentInputSchema,
   playerInputSchema,
   positiveId,
   reportQuerySchema,
   requestActionSchema,
   requestInputSchema,
+  sensitiveGrantSchema,
+  validateIndicatorsForSport,
   videoQuerySchema,
 } from "./validation";
 import {
@@ -223,6 +276,7 @@ async function requireOrganization(
       type: organizations.type,
       region: organizations.region,
       isDemo: organizations.isDemo,
+      sports: organizations.sports,
     })
     .from(memberships)
     .innerJoin(organizations, eq(memberships.organizationId, organizations.id))
@@ -243,6 +297,7 @@ async function requireOrganization(
     type: row.type,
     region: row.region,
     isDemo: Boolean(row.isDemo),
+    sports: (row.sports ?? []) as SportId[],
     actorKind: "member",
   };
 }
@@ -257,6 +312,7 @@ async function listMemberships(userId: number): Promise<Membership[]> {
       role: memberships.role,
       region: organizations.region,
       isDemo: organizations.isDemo,
+      sports: organizations.sports,
     })
     .from(memberships)
     .innerJoin(organizations, eq(memberships.organizationId, organizations.id))
@@ -317,6 +373,166 @@ async function requireFullPlayerAccess(
     throw ForbiddenError("لا تملك صلاحية الاطلاع على الملف الكامل للاعب");
   }
   return row;
+}
+
+const SENSITIVE_ACCESS_ERROR =
+  "لا تملك صلاحية الوصول إلى هذه البيانات الحساسة؛ الصلاحية منفصلة ومحددة لكل نوع";
+
+/** Scope-specific active grants for one organization on one athlete. */
+async function sensitiveScopesFor(
+  db: Database,
+  playerId: number,
+  organizationId: number
+): Promise<Record<SensitiveScope, boolean>> {
+  const rows = await db
+    .select()
+    .from(playerSensitiveGrants)
+    .where(
+      and(
+        eq(playerSensitiveGrants.playerId, playerId),
+        eq(playerSensitiveGrants.organizationId, organizationId),
+        eq(playerSensitiveGrants.active, true)
+      )
+    );
+  const state = emptyScopeState();
+  for (const row of rows)
+    if (isSensitiveScope(row.scope)) state[row.scope] = true;
+  return state;
+}
+
+/** Creates or reactivates exactly one (organization, scope) grant. */
+async function grantSensitiveScope(
+  tx: any,
+  input: {
+    playerId: number;
+    organizationId: number;
+    scope: SensitiveScope;
+    userId: number | null;
+    userName: string;
+  }
+): Promise<void> {
+  const now = new Date();
+  const existing = await tx
+    .select()
+    .from(playerSensitiveGrants)
+    .where(
+      and(
+        eq(playerSensitiveGrants.playerId, input.playerId),
+        eq(playerSensitiveGrants.organizationId, input.organizationId),
+        eq(playerSensitiveGrants.scope, input.scope)
+      )
+    )
+    .limit(1)
+    .for("update");
+  if (existing[0]) {
+    await tx
+      .update(playerSensitiveGrants)
+      .set({
+        active: true,
+        grantedAt: now,
+        revokedAt: null,
+        grantedByUserId: input.userId,
+        grantedByName: input.userName,
+      })
+      .where(eq(playerSensitiveGrants.id, existing[0].id));
+    return;
+  }
+  await tx.insert(playerSensitiveGrants).values({
+    playerId: input.playerId,
+    organizationId: input.organizationId,
+    scope: input.scope,
+    active: true,
+    grantedByUserId: input.userId,
+    grantedByName: input.userName,
+    grantedAt: now,
+    revokedAt: null,
+  });
+}
+
+async function sensitiveAccessState(
+  db: Database,
+  context: OrganizationMembership,
+  player: { id: number; academyId: number }
+): Promise<SensitiveAccessState> {
+  const scopes = await sensitiveScopesFor(
+    db,
+    player.id,
+    context.organizationId
+  );
+  const canManageGrants = canManageSensitiveGrants(context, player.academyId);
+  const state: SensitiveAccessState = {
+    playerId: player.id,
+    scopes,
+    canManageGrants,
+    canWrite: canWriteSensitiveData(context, player.academyId),
+  };
+  if (!canManageGrants) return state;
+
+  const grantRows = await db
+    .select()
+    .from(playerSensitiveGrants)
+    .where(eq(playerSensitiveGrants.playerId, player.id));
+  const organizationIds = [
+    ...new Set(grantRows.map((row: any) => Number(row.organizationId))),
+  ];
+  const organizationRows = organizationIds.length
+    ? await db
+        .select({
+          id: organizations.id,
+          name: organizations.name,
+          type: organizations.type,
+        })
+        .from(organizations)
+        .where(inArray(organizations.id, organizationIds))
+    : [];
+  const organizationById = new Map(
+    organizationRows.map((row: any) => [Number(row.id), row])
+  );
+  state.grants = grantRows.map((row: any) =>
+    serializeSensitiveGrant(
+      row,
+      organizationById.get(Number(row.organizationId))?.name ?? "مؤسسة",
+      organizationById.get(Number(row.organizationId))?.type === "club"
+        ? "club"
+        : "academy"
+    )
+  );
+
+  const academyRows = await db
+    .select({ id: organizations.id, name: organizations.name })
+    .from(organizations)
+    .where(eq(organizations.id, player.academyId))
+    .limit(1);
+  const clubGrantRows = await db
+    .select()
+    .from(accessGrants)
+    .where(
+      and(eq(accessGrants.playerId, player.id), eq(accessGrants.active, true))
+    );
+  const clubIds = [
+    ...new Set(clubGrantRows.map((row: any) => Number(row.clubId))),
+  ];
+  const clubRows = clubIds.length
+    ? await db
+        .select({ id: organizations.id, name: organizations.name })
+        .from(organizations)
+        .where(inArray(organizations.id, clubIds))
+    : [];
+  state.candidates = [
+    ...academyRows.map((row: any) => ({
+      organizationId: Number(row.id),
+      name: String(row.name),
+      type: "academy" as const,
+      reason: "الأكاديمية المالكة للملف",
+    })),
+    ...clubRows.map((row: any) => ({
+      organizationId: Number(row.id),
+      name: String(row.name),
+      type: "club" as const,
+      reason: "نادٍ حاصل على اعتماد وصول للملف",
+    })),
+  ];
+  return state;
 }
 
 async function writeAudit(
@@ -842,15 +1058,23 @@ const reportCsv = exportVerifiedReportCsv;
 
 async function createOrganizationForUser(
   user: AuthenticatedUser,
-  input: { name: string; type: "academy" | "club"; region: string },
+  input: {
+    name: string;
+    type: "academy" | "club";
+    region: string;
+    sports?: string[];
+  },
   demo: boolean = false
 ): Promise<Membership> {
   const db = await database();
+  const sports = (input.sports ?? ["football"]).filter(isSportId);
+  if (!sports.length) throw BadRequestError("اختر رياضة واحدة على الأقل");
   const result = await db.transaction(async tx => {
     const orgResult = await tx.insert(organizations).values({
       name: input.name,
       type: input.type,
       region: input.region,
+      sports,
       isDemo: demo,
       demoOwnerUserId: demo ? user.id : null,
     });
@@ -872,6 +1096,7 @@ async function createOrganizationForUser(
       role: "owner" as const,
       region: input.region,
       isDemo: demo,
+      sports,
     };
   });
   return asMembership(result);
@@ -895,6 +1120,8 @@ async function seedTruthfulDemoPlayers(
     await tx.insert(players).values({
       academyId,
       name: seed.name,
+      sport: seed.sport,
+      gymnasticsCategory: seed.gymnasticsCategory,
       age: seed.age,
       nationality: seed.nationality,
       position: seed.position,
@@ -946,6 +1173,7 @@ async function ensureDemoSetup(user: AuthenticatedUser): Promise<void> {
         name,
         type,
         region,
+        sports: [...SPORT_IDS],
         isDemo: true,
         demoOwnerUserId: user.id,
       });
@@ -1024,6 +1252,7 @@ async function createDemoSession(): Promise<{ token: string }> {
       name: "أكاديمية ATHLETE AI التجريبية",
       type: "academy",
       region: "الرياض",
+      sports: [...SPORT_IDS],
       isDemo: true,
       demoOwnerUserId: null,
       demoSeededAt: now,
@@ -1033,6 +1262,7 @@ async function createDemoSession(): Promise<{ token: string }> {
       name: "نادي ATHLETE AI التجريبي",
       type: "club",
       region: "الرياض",
+      sports: [...SPORT_IDS],
       isDemo: true,
       demoOwnerUserId: null,
       demoSeededAt: now,
@@ -1236,7 +1466,14 @@ export function registerAthleteRoutes(app: Express): void {
       const input = parse(organizationPatchSchema, req.body);
       if (isGuestActor(actor) && input.region !== undefined)
         throw ForbiddenError("يمكن لجلسة العرض تعديل اسم المؤسسة فقط");
-      const patch = isGuestActor(actor) ? { name: input.name } : input;
+      const patch = isGuestActor(actor)
+        ? { name: input.name }
+        : {
+            ...input,
+            ...(input.sports
+              ? { sports: input.sports.filter(isSportId) as SportId[] }
+              : {}),
+          };
       const db = await database();
       await db.transaction(async tx => {
         await tx
@@ -1258,6 +1495,7 @@ export function registerAthleteRoutes(app: Express): void {
         role: context.role,
         region: patch.region ?? context.region,
         isDemo: context.isDemo,
+        sports: patch.sports ?? context.sports,
       });
     })
   );
@@ -1268,8 +1506,9 @@ export function registerAthleteRoutes(app: Express): void {
       const actor = await requireActor(req);
       const context = await requireOrganization(req, actor);
       const db = await database();
-      const query = queryObject(req, ["discovery", "search"]);
+      const query = queryObject(req, ["discovery", "search", "sport"]);
       const discovery = query.discovery === "true";
+      const sportFilter = isSportId(query.sport) ? query.sport : undefined;
       const conditions = isDemoWorkspace(context)
         ? [
             eq(players.academyId, context.workspaceAcademyId!),
@@ -1281,6 +1520,7 @@ export function registerAthleteRoutes(app: Express): void {
               eq(players.demoArchived, false),
             ]
           : [eq(players.discoverable, true), eq(players.demoArchived, false)];
+      if (sportFilter) conditions.push(eq(players.sport, sportFilter));
       const rows = await db
         .select({ player: players, academyName: organizations.name })
         .from(players)
@@ -1361,16 +1601,33 @@ export function registerAthleteRoutes(app: Express): void {
       if (!isAcademy(context))
         throw ForbiddenError("إضافة اللاعبين متاحة للأكاديمية فقط");
       const input = parse(playerInputSchema, req.body);
+      const normalized = normalizePlayerSport(input);
+      if (!organizationSupportsSport(context.sports, normalized.sport))
+        throw ForbiddenError(
+          "هذه الرياضة غير مفعّلة لمؤسستك؛ فعّلها من إعدادات المؤسسة أولًا"
+        );
       const db = await database();
       const now = new Date();
       const result = await db.transaction(async tx => {
         const created = await tx.insert(players).values({
           academyId: context.organizationId,
-          ...input,
-          strengths: [],
-          weaknesses: [],
-          skills: [],
-          physicalTests: [],
+          name: input.name,
+          sport: normalized.sport,
+          gymnasticsCategory: normalized.gymnasticsCategory,
+          position: normalized.position,
+          age: input.age,
+          nationality: input.nationality,
+          foot: input.foot,
+          height: input.height,
+          weight: input.weight,
+          birthDate: input.birthDate,
+          jersey: input.jersey,
+          region: input.region,
+          discoverable: input.discoverable,
+          strengths: input.strengths ?? [],
+          weaknesses: input.weaknesses ?? [],
+          skills: input.skills ?? [],
+          physicalTests: input.physicalTests ?? [],
           overall: 0,
           improvement: 0,
           photoKey: "",
@@ -1408,15 +1665,50 @@ export function registerAthleteRoutes(app: Express): void {
         throw ForbiddenError("تعديل اللاعبين متاح للأكاديمية فقط");
       const playerId = parse(positiveId, req.params.id);
       const input = parse(playerInputSchema, req.body);
+      const normalized = normalizePlayerSport(input);
       const db = await database();
       const existing = await playerWithAcademy(db, playerId);
       if (!canManagePlayer(context, existing.player.academyId))
         throw ForbiddenError("لا تملك صلاحية تعديل هذا اللاعب");
+      if (!organizationSupportsSport(context.sports, normalized.sport))
+        throw ForbiddenError(
+          "هذه الرياضة غير مفعّلة لمؤسستك؛ فعّلها من إعدادات المؤسسة أولًا"
+        );
+      const [analysisCount, assessmentCount] = await Promise.all([
+        db
+          .select({ id: analyses.id })
+          .from(analyses)
+          .where(eq(analyses.playerId, playerId))
+          .limit(1),
+        db
+          .select({ id: playerPhysicalAssessments.id })
+          .from(playerPhysicalAssessments)
+          .where(eq(playerPhysicalAssessments.playerId, playerId))
+          .limit(1),
+      ]);
+      const recordedRecords = analysisCount.length + assessmentCount.length;
+      assertSportChangeAllowed(
+        (existing.player.sport ?? "football") as SportId,
+        normalized.sport,
+        recordedRecords
+      );
       await db.transaction(async tx => {
         await tx
           .update(players)
           .set({
-            ...input,
+            name: input.name,
+            sport: normalized.sport,
+            gymnasticsCategory: normalized.gymnasticsCategory,
+            position: normalized.position,
+            age: input.age,
+            nationality: input.nationality,
+            foot: input.foot,
+            height: input.height,
+            weight: input.weight,
+            birthDate: input.birthDate,
+            jersey: input.jersey,
+            region: input.region,
+            discoverable: input.discoverable,
             strengths: input.strengths ?? existing.player.strengths,
             weaknesses: input.weaknesses ?? existing.player.weaknesses,
             skills: input.skills ?? existing.player.skills,
@@ -1666,6 +1958,17 @@ export function registerAthleteRoutes(app: Express): void {
               and(
                 eq(accessGrants.playerId, request.playerId),
                 eq(accessGrants.clubId, request.clubId)
+              )
+            );
+          // Sensitive data access lapses with the profile grant: a club is never
+          // left holding health or emergency access after revocation.
+          await tx
+            .update(playerSensitiveGrants)
+            .set({ active: false, revokedAt: new Date() })
+            .where(
+              and(
+                eq(playerSensitiveGrants.playerId, request.playerId),
+                eq(playerSensitiveGrants.organizationId, request.clubId)
               )
             );
         }
@@ -2411,13 +2714,18 @@ export function registerAthleteRoutes(app: Express): void {
           requiredAction,
           authorName,
           editedAt: now.toISOString(),
+          editedByUserId: actorUserId(actor),
         };
+        // authorName/originalText stay untouched: the original author keeps
+        // attribution while the editor is recorded separately.
         await tx
           .update(notes)
           .set({
             text,
             requiredAction,
             revisions: [...revisions, revision],
+            lastEditedByName: authorName,
+            lastEditedByUserId: actorUserId(actor),
             updatedAt: now,
           })
           .where(eq(notes.id, note.id));
@@ -2427,7 +2735,14 @@ export function registerAthleteRoutes(app: Express): void {
           entityType: "note",
           entityId: note.id,
           action: "note.updated",
-          metadata: { playerId: note.playerId, source: note.source ?? "coach" },
+          metadata: {
+            playerId: note.playerId,
+            source: note.source ?? "coach",
+            noteAuthorName: note.authorName,
+            originalAuthorUserId: note.authorUserId ?? null,
+            editedByName: authorName,
+            editedByUserId: actorUserId(actor),
+          },
         });
         const rows = await tx
           .select()
@@ -2438,6 +2753,546 @@ export function registerAthleteRoutes(app: Express): void {
         return { note: rows[0], playerName: player.name };
       });
       res.json(serializeNote(result.note, result.playerName));
+    })
+  );
+
+  // ---------------------------------------------------------------------
+  // Sport configuration and the gymnastics section
+  // ---------------------------------------------------------------------
+
+  router.get(
+    "/sports",
+    asyncRoute(async (req, res) => {
+      await requireActor(req);
+      res.json(
+        SPORT_IDS.map(id => {
+          const definition = sportDefinition(id);
+          return {
+            id: definition.id,
+            name: definition.name,
+            terminology: definition.terminology,
+            groups: definition.groups,
+            skills: definition.skills,
+            apparatus: definition.apparatus,
+            categories: definition.categories,
+            indicatorCount: definition.indicators.length,
+            notes: definition.notes,
+          };
+        })
+      );
+    })
+  );
+
+  router.get(
+    "/gymnastics/context",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const input = parse(
+        z.object({ playerId: positiveId }),
+        queryObject(req, ["playerId"])
+      );
+      const db = await database();
+      const row = await requireFullPlayerAccess(db, context, input.playerId);
+      const sport = (row.player.sport ?? "football") as SportId;
+      if (sport !== "gymnastics")
+        throw BadRequestError("ملف هذا اللاعب ليس ضمن رياضة الجمباز");
+      const category = row.player.gymnasticsCategory;
+      if (!isGymnasticsCategoryId(category))
+        throw new HttpError(409, "فئة الجمباز غير محددة في ملف اللاعب");
+      res.json({
+        playerId: row.player.id,
+        sport,
+        category,
+        categoryName: gymnasticsCategoryName(category),
+        apparatusOrder: apparatusOrderForCategory(category),
+        apparatus: apparatusForCategory(category).map((apparatus, index) => ({
+          ...apparatus,
+          order: index + 1,
+          indicators: indicatorsFor("gymnastics", apparatus.id).map(
+            indicator => ({
+              code: indicator.code,
+              label: indicator.label,
+              definition: indicator.definition,
+              group: indicator.group,
+              units: indicator.units,
+              measurementType: indicator.measurementType,
+              validationStatus: indicator.validationStatus,
+            })
+          ),
+        })),
+        notes: sportDefinition("gymnastics").notes,
+      });
+    })
+  );
+
+  // ---------------------------------------------------------------------
+  // Standardized physical indicators (sport- and apparatus-scoped)
+  // ---------------------------------------------------------------------
+
+  router.get(
+    "/physical-assessments",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const input = parse(
+        z.object({
+          playerId: positiveId,
+          apparatus: z.string().trim().max(40).optional(),
+        }),
+        queryObject(req, ["playerId", "apparatus"])
+      );
+      const db = await database();
+      const row = await requireFullPlayerAccess(db, context, input.playerId);
+      const conditions = [
+        eq(playerPhysicalAssessments.playerId, row.player.id),
+      ];
+      if (input.apparatus)
+        conditions.push(
+          eq(playerPhysicalAssessments.apparatus, input.apparatus)
+        );
+      const rows = await db
+        .select()
+        .from(playerPhysicalAssessments)
+        .where(and(...conditions))
+        .orderBy(desc(playerPhysicalAssessments.recordedAt));
+      res.json(rows.map(serializePhysicalAssessment));
+    })
+  );
+
+  router.post(
+    "/physical-assessments",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      if (!isAcademy(context))
+        throw ForbiddenError("تسجيل المؤشرات البدنية متاح للأكاديمية فقط");
+      const input = parse(physicalAssessmentInputSchema, req.body);
+      const db = await database();
+      const target = await playerWithAcademy(db, input.playerId);
+      if (!canManagePlayer(context, target.player.academyId))
+        throw ForbiddenError("لا تملك صلاحية تسجيل تقييم لهذا اللاعب");
+      const sport = (target.player.sport ?? "football") as SportId;
+      const category = target.player.gymnasticsCategory ?? "";
+      assertApparatusForSport(sport, category, input.apparatus);
+      if (input.skill) assertSkillBelongsToSport(sport, input.skill);
+      if (sport !== "gymnastics" && input.apparatus)
+        throw BadRequestError("هذه الرياضة لا تستخدم أجهزة الجمباز");
+      const indicatorError = validateIndicatorsForSport(
+        sport,
+        input.apparatus,
+        input.indicators
+      );
+      if (indicatorError) throw BadRequestError(indicatorError);
+      const now = new Date();
+      const recordedAt = input.recordedAt ? new Date(input.recordedAt) : now;
+      if (Number.isNaN(recordedAt.getTime()) || recordedAt > now)
+        throw BadRequestError("وقت التقييم غير صالح أو في المستقبل");
+      const sessionKey = input.sessionKey ?? assessmentSessionKey();
+      const authorName = actorDisplayName(actor);
+      const options = sportDefinition(sport).indicators;
+      const result = await db.transaction(async tx => {
+        const values = input.indicators.map(indicator => {
+          const definition = options.find(
+            item => item.code === indicator.code
+          )!;
+          return {
+            playerId: target.player.id,
+            sport,
+            apparatus: input.apparatus,
+            skill: input.skill,
+            indicatorCode: definition.code,
+            indicatorLabel: definition.label,
+            indicatorGroup: definition.group,
+            indicatorVersion: PHYSICAL_INDICATOR_VERSION,
+            value: indicator.value,
+            unit: indicator.unit,
+            note: indicator.note ?? "",
+            criterionStatus: "provisional_unvalidated" as const,
+            sessionKey,
+            recordedAt,
+            authorName,
+            recordedByUserId: actorUserId(actor),
+            createdAt: now,
+          };
+        });
+        await tx.insert(playerPhysicalAssessments).values(values);
+        await writeAudit(tx, {
+          organizationId: context.organizationId,
+          actorUserId: actorUserId(actor),
+          entityType: "player_physical_assessment",
+          entityId: target.player.id,
+          action: "player.physical_assessment_recorded",
+          metadata: {
+            playerId: target.player.id,
+            sport,
+            apparatus: input.apparatus || null,
+            sessionKey,
+            indicatorCodes: input.indicators.map(item => item.code),
+            criterionStatus: "provisional_unvalidated",
+          },
+        });
+        const rows = await tx
+          .select()
+          .from(playerPhysicalAssessments)
+          .where(eq(playerPhysicalAssessments.sessionKey, sessionKey));
+        return rows;
+      });
+      res.status(201).json({
+        sessionKey,
+        assessments: result.map(serializePhysicalAssessment),
+      });
+    })
+  );
+
+  router.delete(
+    "/physical-assessments/:id",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      if (!isAcademy(context))
+        throw ForbiddenError("إدارة المؤشرات البدنية متاحة للأكاديمية فقط");
+      const assessmentId = parse(positiveId, req.params.id);
+      const db = await database();
+      await db.transaction(async tx => {
+        const rows = await tx
+          .select()
+          .from(playerPhysicalAssessments)
+          .where(eq(playerPhysicalAssessments.id, assessmentId))
+          .limit(1)
+          .for("update");
+        const assessment = rows[0];
+        if (!assessment) throw NotFoundError("سجل التقييم غير موجود");
+        const playerRows = await tx
+          .select()
+          .from(players)
+          .where(eq(players.id, assessment.playerId))
+          .limit(1);
+        const player = playerRows[0];
+        if (!player || !canManagePlayer(context, player.academyId))
+          throw ForbiddenError("لا تملك صلاحية حذف هذا التقييم");
+        await tx
+          .delete(playerPhysicalAssessments)
+          .where(eq(playerPhysicalAssessments.id, assessmentId));
+        await writeAudit(tx, {
+          organizationId: context.organizationId,
+          actorUserId: actorUserId(actor),
+          entityType: "player_physical_assessment",
+          entityId: assessmentId,
+          action: "player.physical_assessment_deleted",
+          metadata: {
+            playerId: assessment.playerId,
+            indicatorCode: assessment.indicatorCode,
+          },
+        });
+      });
+      res.status(204).end();
+    })
+  );
+
+  // ---------------------------------------------------------------------
+  // Sensitive athlete data: health profile and emergency contact
+  // ---------------------------------------------------------------------
+
+  router.get(
+    "/players/:id/health",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const playerId = parse(positiveId, req.params.id);
+      const db = await database();
+      // Defence in depth: the ordinary player-profile gate is checked *and* the
+      // scope grant. A scope row can never widen access beyond the profile.
+      const row = await requireFullPlayerAccess(db, context, playerId);
+      const access = await sensitiveAccessState(db, context, row.player);
+      if (!access.scopes.health) throw ForbiddenError(SENSITIVE_ACCESS_ERROR);
+      const profileRows = await db
+        .select()
+        .from(playerHealthProfiles)
+        .where(eq(playerHealthProfiles.playerId, playerId))
+        .limit(1);
+      res.json({
+        profile: profileRows[0] ? serializeHealthProfile(profileRows[0]) : null,
+        access,
+      });
+    })
+  );
+
+  router.put(
+    "/players/:id/health",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const playerId = parse(positiveId, req.params.id);
+      const input = parse(healthInputSchema, req.body);
+      const db = await database();
+      const row = await playerWithAcademy(db, playerId);
+      if (!canWriteSensitiveData(context, row.player.academyId))
+        throw ForbiddenError(
+          "تعديل الملف الصحي متاح لمالك الأكاديمية المالكة للملف فقط"
+        );
+      const now = new Date();
+      const authorName = actorDisplayName(actor);
+      await db.transaction(async tx => {
+        const existing = await tx
+          .select()
+          .from(playerHealthProfiles)
+          .where(eq(playerHealthProfiles.playerId, playerId))
+          .limit(1)
+          .for("update");
+        if (existing[0]) {
+          await tx
+            .update(playerHealthProfiles)
+            .set({
+              ...input,
+              updatedByName: authorName,
+              updatedByUserId: actorUserId(actor),
+              updatedAt: now,
+            })
+            .where(eq(playerHealthProfiles.playerId, playerId));
+        } else {
+          await tx.insert(playerHealthProfiles).values({
+            playerId,
+            ...input,
+            updatedByName: authorName,
+            updatedByUserId: actorUserId(actor),
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+        // The owner's save is the explicit authorisation for the owning academy.
+        // It grants `health` only; the emergency scope stays untouched.
+        await grantSensitiveScope(tx, {
+          playerId,
+          organizationId: row.player.academyId,
+          scope: "health",
+          userId: actorUserId(actor),
+          userName: authorName,
+        });
+        await writeAudit(tx, {
+          organizationId: context.organizationId,
+          actorUserId: actorUserId(actor),
+          entityType: "player_health_profile",
+          entityId: playerId,
+          action: "player.health_updated",
+          metadata: {
+            playerId,
+            // Field names only: health content is never written to the audit log.
+            updatedFields: Object.entries(input)
+              .filter(([, value]) => Boolean(value))
+              .map(([key]) => key),
+          },
+        });
+      });
+      const profileRows = await db
+        .select()
+        .from(playerHealthProfiles)
+        .where(eq(playerHealthProfiles.playerId, playerId))
+        .limit(1);
+      res.json({
+        profile: profileRows[0] ? serializeHealthProfile(profileRows[0]) : null,
+        access: await sensitiveAccessState(db, context, row.player),
+      });
+    })
+  );
+
+  router.get(
+    "/players/:id/emergency-contact",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const playerId = parse(positiveId, req.params.id);
+      const db = await database();
+      const row = await requireFullPlayerAccess(db, context, playerId);
+      const access = await sensitiveAccessState(db, context, row.player);
+      if (!access.scopes.emergency)
+        throw ForbiddenError(SENSITIVE_ACCESS_ERROR);
+      const contactRows = await db
+        .select()
+        .from(playerEmergencyContacts)
+        .where(eq(playerEmergencyContacts.playerId, playerId))
+        .limit(1);
+      res.json({
+        contact: contactRows[0]
+          ? serializeEmergencyContact(contactRows[0])
+          : null,
+        access,
+      });
+    })
+  );
+
+  router.put(
+    "/players/:id/emergency-contact",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const playerId = parse(positiveId, req.params.id);
+      const input = parse(emergencyContactSchema, req.body);
+      const db = await database();
+      const row = await playerWithAcademy(db, playerId);
+      if (!canWriteSensitiveData(context, row.player.academyId))
+        throw ForbiddenError(
+          "تعديل جهة الاتصال في الطوارئ متاح لمالك الأكاديمية المالكة للملف فقط"
+        );
+      const now = new Date();
+      const authorName = actorDisplayName(actor);
+      await db.transaction(async tx => {
+        const existing = await tx
+          .select()
+          .from(playerEmergencyContacts)
+          .where(eq(playerEmergencyContacts.playerId, playerId))
+          .limit(1)
+          .for("update");
+        if (existing[0]) {
+          await tx
+            .update(playerEmergencyContacts)
+            .set({
+              ...input,
+              updatedByName: authorName,
+              updatedByUserId: actorUserId(actor),
+              updatedAt: now,
+            })
+            .where(eq(playerEmergencyContacts.playerId, playerId));
+        } else {
+          await tx.insert(playerEmergencyContacts).values({
+            playerId,
+            ...input,
+            updatedByName: authorName,
+            updatedByUserId: actorUserId(actor),
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+        // Explicit authorisation for the owning academy for `emergency` only.
+        await grantSensitiveScope(tx, {
+          playerId,
+          organizationId: row.player.academyId,
+          scope: "emergency",
+          userId: actorUserId(actor),
+          userName: authorName,
+        });
+        await writeAudit(tx, {
+          organizationId: context.organizationId,
+          actorUserId: actorUserId(actor),
+          entityType: "player_emergency_contact",
+          entityId: playerId,
+          action: "player.emergency_contact_updated",
+          metadata: {
+            playerId,
+            updatedFields: Object.entries(input)
+              .filter(([, value]) => Boolean(value))
+              .map(([key]) => key),
+          },
+        });
+      });
+      const contactRows = await db
+        .select()
+        .from(playerEmergencyContacts)
+        .where(eq(playerEmergencyContacts.playerId, playerId))
+        .limit(1);
+      res.json({
+        contact: contactRows[0]
+          ? serializeEmergencyContact(contactRows[0])
+          : null,
+        access: await sensitiveAccessState(db, context, row.player),
+      });
+    })
+  );
+
+  router.get(
+    "/players/:id/sensitive-access",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const playerId = parse(positiveId, req.params.id);
+      const db = await database();
+      const row = await playerWithAcademy(db, playerId);
+      const profileGrant = isClub(context)
+        ? isDemoWorkspace(context)
+          ? false
+          : await hasActiveGrant(db, row.player.id, context.organizationId)
+        : false;
+      const allowed =
+        (isAcademy(context) &&
+          context.organizationId === row.player.academyId) ||
+        canReadFullPlayer(context, row.player.academyId, profileGrant);
+      if (!allowed)
+        throw ForbiddenError("لا تملك صلاحية إدارة صلاحيات هذا اللاعب");
+      res.json(await sensitiveAccessState(db, context, row.player));
+    })
+  );
+
+  router.post(
+    "/players/:id/sensitive-access",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const playerId = parse(positiveId, req.params.id);
+      const input = parse(sensitiveGrantSchema, req.body);
+      const db = await database();
+      const row = await playerWithAcademy(db, playerId);
+      if (!canManageSensitiveGrants(context, row.player.academyId))
+        throw ForbiddenError(
+          "إدارة صلاحيات البيانات الحساسة متاحة لمالك الأكاديمية المالكة فقط"
+        );
+      const granteeRows = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, input.organizationId))
+        .limit(1);
+      const grantee = granteeRows[0];
+      if (!grantee) throw NotFoundError("المؤسسة المحددة غير موجودة");
+      const granteeProfileGrant =
+        grantee.type === "club"
+          ? await hasActiveGrant(db, row.player.id, grantee.id)
+          : false;
+      if (
+        !isGrantableOrganization({
+          granteeOrganizationId: grantee.id,
+          granteeType: grantee.type,
+          academyId: row.player.academyId,
+          hasActiveProfileGrant: granteeProfileGrant,
+        })
+      )
+        throw ForbiddenError(
+          "لا يمكن منح هذه المؤسسة وصولًا إلى بيانات حساسة قبل اعتماد وصولها إلى ملف اللاعب"
+        );
+      const authorName = actorDisplayName(actor);
+      await db.transaction(async tx => {
+        if (input.action === "grant") {
+          await grantSensitiveScope(tx, {
+            playerId,
+            organizationId: grantee.id,
+            scope: input.scope,
+            userId: actorUserId(actor),
+            userName: authorName,
+          });
+        } else {
+          await tx
+            .update(playerSensitiveGrants)
+            .set({ active: false, revokedAt: new Date() })
+            .where(
+              and(
+                eq(playerSensitiveGrants.playerId, playerId),
+                eq(playerSensitiveGrants.organizationId, grantee.id),
+                eq(playerSensitiveGrants.scope, input.scope)
+              )
+            );
+        }
+        await writeAudit(tx, {
+          organizationId: context.organizationId,
+          actorUserId: actorUserId(actor),
+          entityType: "player_sensitive_grant",
+          entityId: playerId,
+          action: `player.sensitive_${input.scope}_${input.action}`,
+          metadata: {
+            playerId,
+            organizationId: grantee.id,
+            scope: input.scope,
+          },
+        });
+      });
+      res.json(await sensitiveAccessState(db, context, row.player));
     })
   );
 

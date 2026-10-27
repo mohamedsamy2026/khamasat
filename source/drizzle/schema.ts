@@ -19,6 +19,8 @@ import type {
   SkillValue,
   VideoSource,
 } from "../shared/athlete";
+import type { GymnasticsCategoryId, SportId } from "../shared/sports/types";
+import type { PhysicalAssessmentCriterionStatus } from "../shared/physical-assessment";
 import type { PoseResult } from "../shared/pose";
 import type {
   AnalysisContext,
@@ -56,6 +58,8 @@ export const organizations = mysqlTable(
     name: varchar("name", { length: 160 }).notNull(),
     type: mysqlEnum("type", ["academy", "club"]).notNull(),
     region: varchar("region", { length: 120 }).notNull(),
+    /** Sports the organization operates; validated against the sport registry. */
+    sports: json("sports").$type<SportId[]>().notNull(),
     isDemo: boolean("isDemo").default(false).notNull(),
     demoOwnerUserId: int("demoOwnerUserId").references(() => users.id, {
       onDelete: "set null",
@@ -124,6 +128,15 @@ export const players = mysqlTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 140 }).notNull(),
+    /** Sport plus optional gymnastics category; both are server-validated. */
+    sport: varchar("sport", { length: 40 })
+      .$type<SportId>()
+      .notNull()
+      .default("football"),
+    gymnasticsCategory: varchar("gymnasticsCategory", { length: 40 })
+      .$type<GymnasticsCategoryId | "">()
+      .notNull()
+      .default(""),
     age: int("age").notNull(),
     nationality: varchar("nationality", { length: 80 }).notNull(),
     position: varchar("position", { length: 40 }).notNull(),
@@ -281,7 +294,9 @@ export const analyses = mysqlTable(
     score: double("score"),
     poseResult: json("poseResult").$type<PoseResult | null>(),
     context: json("context").$type<AnalysisContext | null>(),
-    evaluationSnapshot: json("evaluationSnapshot").$type<SessionEvaluation | null>(),
+    evaluationSnapshot: json(
+      "evaluationSnapshot"
+    ).$type<SessionEvaluation | null>(),
     metrics: json("metrics").$type<AnalysisMetric[]>().notNull(),
     jointAngles: json("jointAngles")
       .$type<{ name: string; angle: number }[]>()
@@ -312,8 +327,9 @@ export const notes = mysqlTable(
     organizationId: int("organizationId")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    authorUserId: int("authorUserId")
-      .references(() => users.id, { onDelete: "cascade" }),
+    authorUserId: int("authorUserId").references(() => users.id, {
+      onDelete: "cascade",
+    }),
     analysisId: int("analysisId").references(() => analyses.id, {
       onDelete: "set null",
     }),
@@ -334,6 +350,13 @@ export const notes = mysqlTable(
       .notNull()
       .default(""),
     revisions: json("revisions").$type<NoteRevision[]>().notNull(),
+    /** Editor of the latest revision; the original author is never overwritten. */
+    lastEditedByName: varchar("lastEditedByName", { length: 160 })
+      .notNull()
+      .default(""),
+    lastEditedByUserId: int("lastEditedByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
     text: varchar("text", { length: 1000 }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -407,6 +430,149 @@ export const auditEvents = mysqlTable(
     index("audit_events_org_created_idx").on(
       table.organizationId,
       table.createdAt
+    ),
+  ]
+);
+
+/**
+ * Sensitive athlete data. Both tables are written only by the owning academy
+ * owner and read only through an explicit, scope-specific grant.
+ */
+export const playerHealthProfiles = mysqlTable("player_health_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  playerId: int("playerId")
+    .notNull()
+    .unique()
+    .references(() => players.id, { onDelete: "cascade" }),
+  previousInjuries: varchar("previousInjuries", { length: 2000 })
+    .notNull()
+    .default(""),
+  currentMedications: varchar("currentMedications", { length: 2000 })
+    .notNull()
+    .default(""),
+  physiotherapy: varchar("physiotherapy", { length: 2000 })
+    .notNull()
+    .default(""),
+  otherNotes: varchar("otherNotes", { length: 2000 }).notNull().default(""),
+  updatedByName: varchar("updatedByName", { length: 160 })
+    .notNull()
+    .default(""),
+  updatedByUserId: int("updatedByUserId").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const playerEmergencyContacts = mysqlTable("player_emergency_contacts", {
+  id: int("id").autoincrement().primaryKey(),
+  playerId: int("playerId")
+    .notNull()
+    .unique()
+    .references(() => players.id, { onDelete: "cascade" }),
+  contactName: varchar("contactName", { length: 140 }).notNull().default(""),
+  relationship: varchar("relationship", { length: 80 }).notNull().default(""),
+  phone: varchar("phone", { length: 32 }).notNull().default(""),
+  alternatePhone: varchar("alternatePhone", { length: 32 })
+    .notNull()
+    .default(""),
+  notes: varchar("notes", { length: 500 }).notNull().default(""),
+  updatedByName: varchar("updatedByName", { length: 160 })
+    .notNull()
+    .default(""),
+  updatedByUserId: int("updatedByUserId").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** One row per (player, organization, scope); no scope implies another. */
+export const playerSensitiveGrants = mysqlTable(
+  "player_sensitive_grants",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    playerId: int("playerId")
+      .notNull()
+      .references(() => players.id, { onDelete: "cascade" }),
+    organizationId: int("organizationId")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    scope: mysqlEnum("scope", ["health", "emergency"]).notNull(),
+    active: boolean("active").notNull().default(true),
+    grantedByUserId: int("grantedByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    grantedByName: varchar("grantedByName", { length: 160 })
+      .notNull()
+      .default(""),
+    grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+    revokedAt: timestamp("revokedAt"),
+  },
+  table => [
+    unique("player_sensitive_grants_unique").on(
+      table.playerId,
+      table.organizationId,
+      table.scope
+    ),
+    index("player_sensitive_grants_lookup_idx").on(
+      table.organizationId,
+      table.scope,
+      table.active
+    ),
+  ]
+);
+
+/**
+ * Standardized, sport-scoped physical indicator records. Criterion status is
+ * stored explicitly so a provisional indicator can never be presented as an
+ * approved standard by accident.
+ */
+export const playerPhysicalAssessments = mysqlTable(
+  "player_physical_assessments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    playerId: int("playerId")
+      .notNull()
+      .references(() => players.id, { onDelete: "cascade" }),
+    sport: varchar("sport", { length: 40 })
+      .$type<SportId>()
+      .notNull()
+      .default("football"),
+    apparatus: varchar("apparatus", { length: 40 }).notNull().default(""),
+    skill: varchar("skill", { length: 80 }).notNull().default(""),
+    indicatorCode: varchar("indicatorCode", { length: 120 }).notNull(),
+    indicatorLabel: varchar("indicatorLabel", { length: 160 }).notNull(),
+    indicatorGroup: varchar("indicatorGroup", { length: 80 })
+      .notNull()
+      .default(""),
+    indicatorVersion: varchar("indicatorVersion", { length: 60 })
+      .notNull()
+      .default(""),
+    value: double("value").notNull(),
+    unit: varchar("unit", { length: 20 }).notNull(),
+    note: varchar("note", { length: 500 }).notNull().default(""),
+    criterionStatus: varchar("criterionStatus", { length: 40 })
+      .$type<PhysicalAssessmentCriterionStatus>()
+      .notNull()
+      .default("provisional_unvalidated"),
+    sessionKey: varchar("sessionKey", { length: 40 }).notNull().default(""),
+    recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+    authorName: varchar("authorName", { length: 160 }).notNull().default(""),
+    recordedByUserId: int("recordedByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("player_physical_assessments_player_idx").on(
+      table.playerId,
+      table.recordedAt
+    ),
+    index("player_physical_assessments_apparatus_idx").on(
+      table.playerId,
+      table.sport,
+      table.apparatus
     ),
   ]
 );

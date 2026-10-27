@@ -19,6 +19,18 @@ import {
   type SessionEvaluation,
 } from "../../shared/evaluation-types";
 import { evaluateSession } from "../../shared/evaluation";
+import {
+  apparatusName,
+  isGymnasticsCategoryId,
+  isSportId,
+  type SportId,
+} from "../../shared/sports";
+import type {
+  EmergencyContact,
+  HealthProfile,
+  SensitiveGrant,
+} from "../../shared/health";
+import type { PhysicalAssessment } from "../../shared/physical-assessment";
 
 const asDate = (value: unknown): string | null => {
   if (!value || (typeof value !== "string" && !(value instanceof Date)))
@@ -73,10 +85,13 @@ function normalizedContext(value: unknown): AnalysisContext {
         : "unknown",
     phase: "whole_clip_unsegmented",
     cameraView:
-      raw.cameraView === "side" || raw.cameraView === "front" || raw.cameraView === "oblique"
+      raw.cameraView === "side" ||
+      raw.cameraView === "front" ||
+      raw.cameraView === "oblique"
         ? raw.cameraView
         : "unknown",
-    staticCamera: typeof raw.staticCamera === "boolean" ? raw.staticCamera : null,
+    staticCamera:
+      typeof raw.staticCamera === "boolean" ? raw.staticCamera : null,
     protocolId: typeof raw.protocolId === "string" ? raw.protocolId : "",
     conditionsNote:
       typeof raw.conditionsNote === "string" ? raw.conditionsNote : "",
@@ -142,6 +157,18 @@ export function historyPoints(value: unknown): HistoryPoint[] {
   });
 }
 
+function sportOf(player: Record<string, unknown>): SportId {
+  const value = player.sport;
+  return isSportId(value) ? value : "football";
+}
+
+function gymnasticsCategoryOf(
+  player: Record<string, unknown>
+): PlayerCard["gymnasticsCategory"] {
+  const value = player.gymnasticsCategory;
+  return isGymnasticsCategoryId(value) ? value : "";
+}
+
 export function serializePlayerCard(
   player: Record<string, unknown>,
   academyName: string,
@@ -151,6 +178,8 @@ export function serializePlayerCard(
   return {
     id: Number(player.id),
     academyId: Number(player.academyId),
+    sport: sportOf(player),
+    gymnasticsCategory: gymnasticsCategoryOf(player),
     academyName,
     name: String(player.name),
     age: Number(player.age),
@@ -308,12 +337,25 @@ function noteRevisions(value: unknown): NoteRevision[] {
   return value.flatMap(item => {
     if (!item || typeof item !== "object") return [];
     const revision = item as Partial<NoteRevision>;
-    return typeof revision.text === "string" &&
-      typeof revision.requiredAction === "string" &&
-      typeof revision.authorName === "string" &&
-      typeof revision.editedAt === "string"
-      ? [revision as NoteRevision]
-      : [];
+    if (
+      typeof revision.text !== "string" ||
+      typeof revision.requiredAction !== "string" ||
+      typeof revision.authorName !== "string" ||
+      typeof revision.editedAt !== "string"
+    )
+      return [];
+    return [
+      {
+        text: revision.text,
+        requiredAction: revision.requiredAction,
+        authorName: revision.authorName,
+        editedAt: revision.editedAt,
+        editedByUserId:
+          typeof revision.editedByUserId === "number"
+            ? revision.editedByUserId
+            : null,
+      },
+    ];
   });
 }
 
@@ -337,11 +379,18 @@ export function serializeNote(
     visibility: note.visibility === "shared" ? "shared" : "academy_internal",
     originalText: String(note.originalText ?? note.text ?? ""),
     updatedAt: asDate(note.updatedAt) ?? asDate(note.createdAt) ?? "",
+    lastEditedByName: String(note.lastEditedByName ?? ""),
+    lastEditedByUserId:
+      typeof note.lastEditedByUserId === "number"
+        ? note.lastEditedByUserId
+        : null,
     revisions: noteRevisions(note.revisions),
   };
 }
 
-export function serializeExercisePlan(plan: Record<string, unknown>): ExercisePlan {
+export function serializeExercisePlan(
+  plan: Record<string, unknown>
+): ExercisePlan {
   return {
     id: Number(plan.id),
     playerId: Number(plan.playerId),
@@ -364,5 +413,82 @@ export function serializeExercisePlan(plan: Record<string, unknown>): ExercisePl
     createdAt: asDate(plan.createdAt) ?? "",
     updatedAt: asDate(plan.updatedAt) ?? asDate(plan.createdAt) ?? "",
     reviewed: Boolean(plan.reviewed),
+  };
+}
+
+export function serializeHealthProfile(
+  row: Record<string, unknown>
+): HealthProfile {
+  return {
+    playerId: Number(row.playerId),
+    previousInjuries: String(row.previousInjuries ?? ""),
+    currentMedications: String(row.currentMedications ?? ""),
+    physiotherapy: String(row.physiotherapy ?? ""),
+    otherNotes: String(row.otherNotes ?? ""),
+    updatedByName: String(row.updatedByName ?? ""),
+    updatedAt: asDate(row.updatedAt) ?? "",
+    createdAt: asDate(row.createdAt) ?? "",
+  };
+}
+
+export function serializeEmergencyContact(
+  row: Record<string, unknown>
+): EmergencyContact {
+  return {
+    playerId: Number(row.playerId),
+    contactName: String(row.contactName ?? ""),
+    relationship: String(row.relationship ?? ""),
+    phone: String(row.phone ?? ""),
+    alternatePhone: String(row.alternatePhone ?? ""),
+    notes: String(row.notes ?? ""),
+    updatedByName: String(row.updatedByName ?? ""),
+    updatedAt: asDate(row.updatedAt) ?? "",
+    createdAt: asDate(row.createdAt) ?? "",
+  };
+}
+
+export function serializeSensitiveGrant(
+  row: Record<string, unknown>,
+  organizationName: string,
+  organizationType: "academy" | "club"
+): SensitiveGrant {
+  return {
+    id: Number(row.id),
+    playerId: Number(row.playerId),
+    organizationId: Number(row.organizationId),
+    organizationName,
+    organizationType,
+    scope: row.scope === "emergency" ? "emergency" : "health",
+    active: Boolean(row.active),
+    grantedAt: asDate(row.grantedAt) ?? "",
+    revokedAt: asDate(row.revokedAt),
+  };
+}
+
+export function serializePhysicalAssessment(
+  row: Record<string, unknown>
+): PhysicalAssessment {
+  const apparatus = String(row.apparatus ?? "");
+  const sport = isSportId(row.sport) ? row.sport : "football";
+  return {
+    id: Number(row.id),
+    playerId: Number(row.playerId),
+    sport,
+    apparatus,
+    apparatusName: apparatus ? apparatusName(apparatus) : "",
+    skill: String(row.skill ?? ""),
+    indicatorCode: String(row.indicatorCode ?? ""),
+    indicatorLabel: String(row.indicatorLabel ?? ""),
+    indicatorGroup: String(row.indicatorGroup ?? ""),
+    indicatorVersion: String(row.indicatorVersion ?? ""),
+    value: Number(row.value),
+    unit: String(row.unit ?? ""),
+    note: String(row.note ?? ""),
+    // Always provisional: the API never exposes a stored criterion claim.
+    criterionStatus: "provisional_unvalidated",
+    sessionKey: String(row.sessionKey ?? ""),
+    recordedAt: asDate(row.recordedAt) ?? "",
+    authorName: String(row.authorName ?? ""),
+    createdAt: asDate(row.createdAt) ?? "",
   };
 }

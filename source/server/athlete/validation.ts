@@ -1,10 +1,20 @@
 import { z } from "zod";
+import { MAX_VIDEO_BYTES, PLAYER_LIMITS } from "../../shared/athlete";
 import {
-  MAX_VIDEO_BYTES,
-  PLAYER_LIMITS,
-  POSITIONS,
-  SKILLS,
-} from "../../shared/athlete";
+  ALL_SKILLS,
+  GYMNASTICS_CATEGORIES,
+  SPORT_IDS,
+  groupsForSport,
+  indicatorsFor,
+  isGymnasticsCategoryId,
+  isSportId,
+  type GymnasticsCategoryId,
+  type SportId,
+} from "../../shared/sports";
+import {
+  EMERGENCY_CONTACT_LIMITS,
+  HEALTH_FIELD_LIMITS,
+} from "../../shared/health";
 import {
   MAX_POSE_SECONDS,
   POSE_ENGINE,
@@ -17,8 +27,39 @@ const trimmed = (min: number, max: number) =>
   z.string().trim().min(min).max(max);
 
 export const positiveId = z.coerce.number().int().positive();
-export const skillName = z.enum(SKILLS);
-export const position = z.enum(POSITIONS);
+/** Any registered sport skill; the route then enforces the athlete's sport. */
+export const skillName = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .refine(value => ALL_SKILLS.includes(value), {
+    message: "المهارة المحددة غير مسجلة في إعدادات الرياضات",
+  });
+/** Any registered sport group; the route then enforces the athlete's sport. */
+export const position = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .refine(value => SPORT_IDS.some(id => groupsForSport(id).includes(value)), {
+    message: "الفئة أو المركز المحدد غير مسجل في إعدادات الرياضات",
+  });
+export const sportId = z.custom<SportId>(
+  value => typeof value === "string" && isSportId(value.trim()),
+  { message: "الرياضة المحددة غير مدعومة" }
+);
+export const gymnasticsCategoryId = z.custom<GymnasticsCategoryId>(
+  value => typeof value === "string" && isGymnasticsCategoryId(value.trim()),
+  { message: "فئة الجمباز المحددة غير مدعومة" }
+);
+export const sportList = z
+  .array(sportId)
+  .min(1)
+  .max(SPORT_IDS.length)
+  .refine(value => new Set(value).size === value.length, {
+    message: "لا تكرر الرياضة نفسها",
+  });
 export const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "يجب أن يكون التاريخ بصيغة YYYY-MM-DD")
@@ -38,9 +79,10 @@ export const isoDateTime = z
   .max(40)
   .refine(
     value => {
-      const match = /^(\d{4}-\d{2}-\d{2})(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?)?$/.exec(
-        value
-      );
+      const match =
+        /^(\d{4}-\d{2}-\d{2})(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?)?$/.exec(
+          value
+        );
       if (!match) return false;
       const calendar = new Date(`${match[1]}T00:00:00.000Z`);
       return (
@@ -56,16 +98,22 @@ export const organizationInputSchema = z.object({
   name: trimmed(2, 160),
   type: z.enum(["academy", "club"]),
   region: trimmed(2, 120),
+  sports: sportList.optional(),
 });
 
 export const organizationPatchSchema = z
   .object({
     name: trimmed(2, 160).optional(),
     region: trimmed(2, 120).optional(),
+    sports: sportList.optional(),
   })
-  .refine(value => value.name !== undefined || value.region !== undefined, {
-    message: "أرسل اسم المؤسسة أو المنطقة لتعديلها",
-  });
+  .refine(
+    value =>
+      value.name !== undefined ||
+      value.region !== undefined ||
+      value.sports !== undefined,
+    { message: "أرسل اسم المؤسسة أو المنطقة أو الرياضات لتعديلها" }
+  );
 
 export const skillValueSchema = z.object({
   name: skillName,
@@ -81,6 +129,11 @@ export const physicalTestSchema = z.object({
 export const playerInputSchema = z
   .object({
     name: trimmed(2, 140),
+    sport: sportId,
+    gymnasticsCategory: z
+      .union([gymnasticsCategoryId, z.literal("")])
+      .optional()
+      .default(""),
     age: z.number().int().min(PLAYER_LIMITS.age.min).max(PLAYER_LIMITS.age.max),
     nationality: trimmed(2, 80),
     position,
@@ -105,10 +158,47 @@ export const playerInputSchema = z
     discoverable: z.boolean(),
     strengths: z.array(trimmed(1, 100)).max(10).optional(),
     weaknesses: z.array(trimmed(1, 100)).max(10).optional(),
-    skills: z.array(skillValueSchema).max(SKILLS.length).optional(),
+    skills: z.array(skillValueSchema).max(ALL_SKILLS.length).optional(),
     physicalTests: z.array(physicalTestSchema).max(12).optional(),
   })
   .superRefine((input, context) => {
+    // Sport/group consistency is enforced here *and* again in the route against
+    // the organization's configured sports.
+    if (input.sport === "gymnastics") {
+      if (!input.gymnasticsCategory) {
+        context.addIssue({
+          code: "custom",
+          path: ["gymnasticsCategory"],
+          message: "اختر فئة الجمباز (سيدات أو رجال) للاعب الجمباز",
+        });
+      } else {
+        const category = GYMNASTICS_CATEGORIES.find(
+          item => item.id === input.gymnasticsCategory
+        );
+        if (category && input.position !== category.name) {
+          context.addIssue({
+            code: "custom",
+            path: ["position"],
+            message: "فئة اللاعب لا تتوافق مع الفئة المختارة",
+          });
+        }
+      }
+    } else {
+      if (input.gymnasticsCategory) {
+        context.addIssue({
+          code: "custom",
+          path: ["gymnasticsCategory"],
+          message: "فئة الجمباز لا تُستخدم مع رياضة أخرى",
+        });
+      }
+      if (!groupsForSport(input.sport).includes(input.position)) {
+        context.addIssue({
+          code: "custom",
+          path: ["position"],
+          message: "المركز المحدد لا يتبع الرياضة المختارة",
+        });
+      }
+    }
     if (!input.birthDate) return;
     const birth = new Date(`${input.birthDate}T00:00:00.000Z`);
     if (birth > new Date()) {
@@ -299,14 +389,16 @@ const analysisContextFields = z.object({
   conditionsNote: trimmed(0, 600),
 });
 
-export const analysisContextSchema = analysisContextFields.partial().transform(value => ({
-  usedFoot: value.usedFoot ?? "unknown",
-  phase: "whole_clip_unsegmented" as const,
-  cameraView: value.cameraView ?? "unknown",
-  staticCamera: value.staticCamera ?? null,
-  protocolId: value.protocolId ?? "",
-  conditionsNote: value.conditionsNote ?? "",
-}));
+export const analysisContextSchema = analysisContextFields
+  .partial()
+  .transform(value => ({
+    usedFoot: value.usedFoot ?? "unknown",
+    phase: "whole_clip_unsegmented" as const,
+    cameraView: value.cameraView ?? "unknown",
+    staticCamera: value.staticCamera ?? null,
+    protocolId: value.protocolId ?? "",
+    conditionsNote: value.conditionsNote ?? "",
+  }));
 
 export const analysisInputSchema = z.object({
   playerId: positiveId,
@@ -315,15 +407,16 @@ export const analysisInputSchema = z.object({
   // MediaPipe result. Historical simulation rows remain readable.
   videoId: positiveId,
   pose: poseResultSchema,
-  context: analysisContextSchema.optional().transform(value =>
-    value ?? {
-      usedFoot: "unknown" as const,
-      phase: "whole_clip_unsegmented" as const,
-      cameraView: "unknown" as const,
-      staticCamera: null,
-      protocolId: "",
-      conditionsNote: "",
-    }
+  context: analysisContextSchema.optional().transform(
+    value =>
+      value ?? {
+        usedFoot: "unknown" as const,
+        phase: "whole_clip_unsegmented" as const,
+        cameraView: "unknown" as const,
+        staticCamera: null,
+        protocolId: "",
+        conditionsNote: "",
+      }
   ),
 });
 
@@ -342,7 +435,8 @@ export const noteInputSchema = z
       context.addIssue({
         code: "custom",
         path: ["analysisId"],
-        message: "اربط الملاحظة بتحليل فعلي أو حدّد أنها ملاحظة عامة غير مرتبطة",
+        message:
+          "اربط الملاحظة بتحليل فعلي أو حدّد أنها ملاحظة عامة غير مرتبطة",
       });
     }
   });
@@ -457,6 +551,115 @@ export const reportQuerySchema = z
 
 export const exportQuerySchema = reportQuerySchema.safeExtend({
   format: z.enum(["html", "csv"]),
+});
+
+const indicatorValueSchema = z
+  .object({
+    code: trimmed(1, 120),
+    value: z.number().finite().min(0).max(10000),
+    unit: trimmed(1, 20),
+    note: trimmed(0, 500).optional(),
+  })
+  .strict();
+
+/**
+ * Standardized selection: every record must reference a catalogued indicator of
+ * the athlete's sport and one of the units that indicator declares.
+ */
+export const physicalAssessmentInputSchema = z
+  .object({
+    playerId: positiveId,
+    apparatus: trimmed(0, 40).optional().default(""),
+    skill: trimmed(0, 80).optional().default(""),
+    sessionKey: z
+      .string()
+      .trim()
+      .regex(/^as_[a-z0-9]{6,32}$/, "معرّف جلسة التقييم غير صالح")
+      .optional(),
+    recordedAt: isoDateTime.optional(),
+    indicators: z.array(indicatorValueSchema).min(1).max(40),
+  })
+  .superRefine((input, context) => {
+    const codes = new Set<string>();
+    for (const [index, indicator] of input.indicators.entries()) {
+      if (codes.has(indicator.code)) {
+        context.addIssue({
+          code: "custom",
+          path: ["indicators", index, "code"],
+          message: "لا تكرر المؤشر نفسه في التقييم الواحد",
+        });
+      }
+      codes.add(indicator.code);
+    }
+  });
+
+/** Validates indicator/unit/apparatus against the athlete's sport catalog. */
+export function validateIndicatorsForSport(
+  sport: SportId,
+  apparatus: string,
+  indicators: Array<{ code: string; unit: string }>
+): string | null {
+  const allowed = indicatorsFor(sport, apparatus || null);
+  for (const indicator of indicators) {
+    const definition = allowed.find(item => item.code === indicator.code);
+    if (!definition)
+      return "المؤشر المحدد غير متاح لهذه الرياضة أو لهذا الجهاز";
+    if (!definition.units.includes(indicator.unit))
+      return "وحدة القياس المحددة غير مسجلة لهذا المؤشر";
+  }
+  return null;
+}
+
+export const healthInputSchema = z.object({
+  previousInjuries: trimmed(0, HEALTH_FIELD_LIMITS.previousInjuries).default(
+    ""
+  ),
+  currentMedications: trimmed(
+    0,
+    HEALTH_FIELD_LIMITS.currentMedications
+  ).default(""),
+  physiotherapy: trimmed(0, HEALTH_FIELD_LIMITS.physiotherapy).default(""),
+  otherNotes: trimmed(0, HEALTH_FIELD_LIMITS.otherNotes).default(""),
+});
+
+const phoneNumber = z
+  .string()
+  .trim()
+  .min(6, "أدخل رقم هاتف صالحًا")
+  .max(EMERGENCY_CONTACT_LIMITS.phone)
+  .refine(value => /^[+0-9][0-9 ()-]{5,}$/.test(value), {
+    message: "رقم الهاتف يحتوي على رموز غير مسموح بها",
+  });
+
+export const emergencyContactSchema = z
+  .object({
+    contactName: z
+      .string()
+      .trim()
+      .min(2, "اسم جهة الاتصال مطلوب")
+      .max(EMERGENCY_CONTACT_LIMITS.contactName),
+    relationship: trimmed(0, EMERGENCY_CONTACT_LIMITS.relationship).default(""),
+    phone: phoneNumber,
+    alternatePhone: z
+      .union([z.literal(""), phoneNumber])
+      .optional()
+      .default(""),
+    notes: trimmed(0, EMERGENCY_CONTACT_LIMITS.notes).default(""),
+  })
+  .superRefine((value, context) => {
+    if (value.alternatePhone && value.alternatePhone === value.phone) {
+      context.addIssue({
+        code: "custom",
+        path: ["alternatePhone"],
+        message: "الرقم البديل يجب أن يختلف عن الرقم الأساسي",
+      });
+    }
+  });
+
+export const sensitiveGrantSchema = z.object({
+  organizationId: positiveId,
+  scope: z.enum(["health", "emergency"]),
+  action: z.enum(["grant", "revoke"]),
 });
 
 export function maxVideoBytes(): number {
