@@ -1,0 +1,365 @@
+.skill-video-filters {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.15fr) repeat(2, minmax(138px, 0.8fr));
+  gap: 0.7rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.skill-video-filters label {
+  display: grid;
+  gap: 0.34rem;
+  color: #155e52;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.skill-video-filters select,
+.skill-video-filters input {
+  width: 100%;
+  min-height: 39px;
+  padding: 0.45rem 0.6rem;
+  color: inherit;
+  border: 1px solid rgba(6, 95, 70, 0.18);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.88);
+  font: inherit;
+}
+
+.skill-video-library {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  gap: 0.85rem;
+}
+
+.skill-video-library.is-compact {
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.skill-video-card {
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(6, 95, 70, 0.14);
+  border-radius: 13px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.96),
+    rgba(236, 253, 245, 0.6)
+  );
+}
+
+.skill-video-library.is-compact .skill-video-card {
+  grid-template-columns: minmax(116px, 0.55fr) minmax(0, 1fr);
+}
+
+.skill-video-play-button {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.skill-video-play-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.skill-video-play-button:focus-visible,
+.skill-video-actions a:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, 0.48);
+  outline-offset: -3px;
+}
+
+.skill-video-thumbnail {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 145px;
+  overflow: hidden;
+  place-items: center;
+  color: #d1fae5;
+  background: linear-gradient(138deg, #064e3b, #047857 58%, #0f766e);
+}
+
+.skill-video-library.is-compact .skill-video-thumbnail {
+  min-height: 100%;
+}
+
+.skill-video-thumbnail > img {
+  width: 100%;
+  height: 100%;
+  min-height: 145px;
+  object-fit: cover;
+}
+
+.skill-video-thumbnail::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 44%, rgba(2, 44, 34, 0.7));
+}
+
+.skill-video-thumbnail-state {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #065f46;
+  border-radius: 50%;
+  background: rgba(236, 253, 245, 0.94);
+  box-shadow: 0 5px 16px rgba(2, 44, 34, 0.28);
+}
+
+.skill-video-thumbnail > small {
+  position: absolute;
+  z-index: 1;
+  right: 0.55rem;
+  bottom: 0.48rem;
+  padding: 0.18rem 0.38rem;
+  color: #ecfdf5;
+  border-radius: 6px;
+  background: rgba(2, 44, 34, 0.66);
+  font-size: 0.67rem;
+}
+
+.skill-video-card-copy {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  min-width: 0;
+  padding: 0.75rem;
+}
+
+.skill-video-card-copy > strong {
+  overflow: hidden;
+  color: #063f36;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-video-card-heading,
+.skill-video-dates,
+.skill-video-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  flex-wrap: wrap;
+}
+
+.skill-video-card-heading {
+  justify-content: space-between;
+}
+
+.skill-video-skill,
+.skill-video-analysis,
+.skill-video-source,
+.skill-video-no-analysis {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.skill-video-skill {
+  padding: 0.22rem 0.45rem;
+  color: #065f46;
+  background: rgba(209, 250, 229, 0.8);
+}
+
+.skill-video-analysis {
+  padding: 0.22rem 0.45rem;
+}
+
+.skill-video-analysis.is-completed {
+  color: #075985;
+  background: #e0f2fe;
+}
+
+.skill-video-analysis.is-not_analyzed {
+  color: #854d0e;
+  background: #fef3c7;
+}
+
+.skill-video-dates,
+.skill-video-analysis-date,
+.skill-video-method-note {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.skill-video-dates span + span::before {
+  margin-inline: 0.2rem;
+  content: "·";
+}
+
+.skill-video-method-note {
+  line-height: 1.5;
+}
+
+.skill-video-source {
+  max-width: 100%;
+  padding: 0.23rem 0.45rem;
+  overflow: hidden;
+  color: #6b4f08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #fffbeb;
+}
+
+.skill-video-actions {
+  margin-top: 0.12rem;
+}
+
+.skill-video-no-analysis {
+  padding: 0.32rem 0;
+  color: #7c5a13;
+}
+
+.skill-video-empty,
+.skill-video-no-results {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 108px;
+  padding: 0.95rem;
+  color: #45615b;
+  border: 1px dashed rgba(6, 95, 70, 0.22);
+  border-radius: 12px;
+  background: rgba(236, 253, 245, 0.42);
+}
+
+.skill-video-empty > svg {
+  flex: 0 0 auto;
+  color: #059669;
+}
+
+.skill-video-empty > div {
+  flex: 1;
+}
+
+.skill-video-empty p {
+  margin: 0.25rem 0 0;
+  font-size: 0.84rem;
+}
+
+.skill-video-no-results {
+  justify-content: center;
+  font-size: 0.88rem;
+}
+
+.skill-upload-form {
+  min-width: min(100%, 660px);
+}
+
+.skill-upload-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skill-upload-item {
+  padding: 0.75rem;
+  border: 1px solid rgba(6, 95, 70, 0.14);
+  border-radius: 12px;
+  background: rgba(248, 255, 252, 0.72);
+}
+
+.skill-upload-item > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.65rem;
+}
+
+.skill-upload-item > header > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.skill-upload-item > header strong {
+  overflow: hidden;
+  color: #063f36;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-upload-item > header small {
+  color: #64748b;
+}
+
+.skill-upload-index {
+  color: #047857;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.skill-upload-item .form-grid {
+  grid-template-columns: minmax(180px, 1.35fr) repeat(2, minmax(130px, 0.8fr));
+}
+
+.skill-upload-progress-row {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+}
+
+.skill-upload-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #45615b;
+  font-size: 0.78rem;
+}
+
+.skill-upload-phase.is-transferring,
+.skill-upload-phase.is-awaiting-save {
+  color: #075985;
+}
+
+.skill-upload-phase.is-saved {
+  color: #047857;
+}
+
+.skill-upload-phase.is-error {
+  color: #b91c1c;
+}
+
+.skill-upload-progress-row progress {
+  width: 100%;
+  height: 0.48rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  accent-color: #059669;
+}
+
+@media (max-width: 660px) {
+  .skill-video-filters,
+  .skill-upload-item .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-video-library.is-compact .skill-video-card {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-video-library.is-compact .skill-video-thumbnail {
+    min-height: 130px;
+  }
+
+  .skill-video-empty {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}

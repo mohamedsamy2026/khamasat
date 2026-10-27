@@ -1,0 +1,380 @@
+{
+  "exportedAt": "2026-10-26T23:46:45.431Z",
+  "videos": [
+    {
+      "id": 1,
+      "playerId": 60010,
+      "title": "squats-check.mp4",
+      "skill": "القوة البدنية",
+      "recordedAt": "2026-10-24T00:00:00.000Z",
+      "size": 482057,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-24T23:00:40.000Z",
+      "source": null,
+      "file": "videos/video_1.mp4",
+      "exportedBytes": 482057,
+      "sha256": "9a1bd9a12959b4287951f070cdf333aa5f1a83ce8a4f68ee5364df1a2d194abd",
+      "complete": true
+    },
+    {
+      "id": 30001,
+      "playerId": 180001,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:05:49.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:05:49.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_30001.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 60001,
+      "playerId": 210001,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:07:35.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:07:35.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_60001.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 60002,
+      "playerId": 210002,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:07:39.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:07:39.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_60002.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 60003,
+      "playerId": 210003,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:07:41.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:07:41.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_60003.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 60004,
+      "playerId": 210004,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:07:45.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:07:45.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_60004.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 60005,
+      "playerId": 210005,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:07:47.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:07:47.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_60005.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 60006,
+      "playerId": 210006,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:07:49.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:07:49.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_60006.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 60007,
+      "playerId": 210007,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:07:52.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:07:52.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_60007.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 60008,
+      "playerId": 210008,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:07:54.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:07:54.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_60008.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 90001,
+      "playerId": 180001,
+      "title": "تسديد — اختبار رفع متعدد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T00:00:00.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:14:16.000Z",
+      "source": null,
+      "file": "videos/video_90001.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 90002,
+      "playerId": 180001,
+      "title": "تمرين قرفصاء — مقطع تحقق مختلف",
+      "skill": "القوة البدنية",
+      "recordedAt": "2026-10-25T00:00:00.000Z",
+      "size": 482057,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:14:21.000Z",
+      "source": null,
+      "file": "videos/video_90002.mp4",
+      "exportedBytes": 482057,
+      "sha256": "9a1bd9a12959b4287951f070cdf333aa5f1a83ce8a4f68ee5364df1a2d194abd",
+      "complete": true
+    },
+    {
+      "id": 120001,
+      "playerId": 240016,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:17:12.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:17:12.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_120001.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 120002,
+      "playerId": 240017,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:17:12.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:17:12.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_120002.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 120003,
+      "playerId": 240018,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:17:12.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:17:12.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_120003.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 150001,
+      "playerId": 270006,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:27:41.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:27:41.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_150001.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 150002,
+      "playerId": 270012,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:27:58.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:27:58.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_150002.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 150003,
+      "playerId": 270018,
+      "title": "ملف تجريبي — عينة تسديد",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-25T22:28:12.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-25T22:28:12.000Z",
+      "source": {
+        "credit": "Tima Miroshnichenko — https://www.pexels.com/@tima-miroshnichenko/",
+        "description": "Dynamic indoor soccer training emphasizing practice and skill. Pexels video ID 6078273; source range 00:00:02.500–00:00:12.500, proportionally scaled to 1280×720. Original filming date is unknown. The depicted person’s identity is unknown and is not the demo record.",
+        "license": "Pexels License — https://www.pexels.com/license/",
+        "url": "https://www.pexels.com/video/a-player-kicking-a-soccer-ball-6078273/"
+      },
+      "file": "videos/video_150003.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 180001,
+      "playerId": 330001,
+      "title": "تحقق جديد — تسديد مرخص",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-26T00:00:00.000Z",
+      "size": 1009285,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-26T04:24:44.000Z",
+      "source": null,
+      "file": "videos/video_180001.mp4",
+      "exportedBytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564",
+      "complete": true
+    },
+    {
+      "id": 180002,
+      "playerId": 330001,
+      "title": "تحقق تقني — لا يوجد جسم",
+      "skill": "التسديد",
+      "recordedAt": "2026-10-26T00:00:00.000Z",
+      "size": 2632,
+      "mime": "video/mp4",
+      "createdAt": "2026-10-26T04:24:47.000Z",
+      "source": null,
+      "file": "videos/video_180002.mp4",
+      "exportedBytes": 2632,
+      "sha256": "4ea479cdcf632debc10c2143075266ff6a4ca03b89adee3c6421c80069a9c6fd",
+      "complete": true
+    }
+  ]
+}

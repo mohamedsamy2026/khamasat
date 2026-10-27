@@ -1,0 +1,490 @@
+.analysis-workflow {
+  direction: rtl;
+}
+
+.analysis-workflow .analysis-disclosure {
+  margin-bottom: 18px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.analysis-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.analysis-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #dceadf;
+  border-radius: 12px;
+  background: #fbfefb;
+  font-size: 14px;
+}
+
+.analysis-step > span {
+  display: grid;
+  flex: 0 0 27px;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border-radius: 50%;
+  background: #166534;
+  color: #fff;
+  font-weight: 800;
+}
+
+.analysis-step strong,
+.analysis-step small {
+  display: block;
+}
+
+.analysis-step small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.analysis-workflow .analysis-toolbar {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(190px, 1.15fr) auto minmax(170px, 1fr) minmax(250px, 1.3fr);
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 15px;
+  border: 1px solid #dceadf;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.analysis-workflow .field,
+.analysis-workflow .field select,
+.analysis-workflow button {
+  font-size: 14px;
+}
+
+.analysis-workflow .field {
+  min-width: 0;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.analysis-workflow .field select {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 5px;
+}
+
+.analysis-upload-button {
+  min-height: 42px;
+  margin-top: 26px;
+  white-space: nowrap;
+}
+
+.analysis-action-group {
+  min-width: 0;
+}
+
+.analysis-start-button {
+  min-height: 42px;
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.analysis-action-reason {
+  min-height: 36px;
+  margin: 5px 0 0;
+  color: #617667;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.analysis-real-ai-status {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: #f7faf7;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.analysis-player-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border: 1px solid #dceadf;
+  border-radius: 12px;
+  background: #f9fcfa;
+}
+
+.analysis-player-card small,
+.analysis-player-card strong,
+.analysis-player-card span {
+  display: block;
+}
+
+.analysis-player-card small,
+.analysis-player-card span {
+  color: #617667;
+  font-size: 13px;
+}
+
+.analysis-player-card strong {
+  margin: 2px 0;
+  color: #153b25;
+  font-size: 16px;
+}
+
+.analysis-player-links,
+.analysis-footer-links > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.analysis-inline-error {
+  margin: 0 0 16px;
+}
+
+.analysis-message {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.analysis-message-error {
+  border: 1px solid #f4c7c7;
+  background: #fff7f7;
+  color: #9e2222;
+}
+
+.analysis-message button {
+  margin-inline-start: auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.analysis-workflow-grid {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: minmax(300px, 1.35fr) minmax(210px, 0.82fr) minmax(250px, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.analysis-workflow-grid > * {
+  direction: rtl;
+}
+
+.analysis-workflow .analysis-main,
+.analysis-workflow .analysis-metrics,
+.analysis-workflow .analysis-side {
+  min-width: 0;
+}
+
+.analysis-photo {
+  position: relative;
+  overflow: hidden;
+  min-height: 278px;
+  border: 1px solid #dceadf;
+  border-radius: 14px;
+  background: #edf5ef;
+}
+
+.analysis-photo img,
+.analysis-photo video {
+  display: block;
+  width: 100%;
+  min-height: 278px;
+  max-height: 410px;
+  object-fit: cover;
+}
+
+.reference-label,
+.analysis-demo-label {
+  position: absolute;
+  z-index: 1;
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: rgb(15 37 24 / 86%);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.reference-label {
+  inset: 10px auto auto 10px;
+}
+
+.analysis-demo-label {
+  inset: auto 10px 10px 10px;
+  text-align: center;
+}
+
+.analysis-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.analysis-controls > button,
+.analysis-reference-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  border: 1px solid #cfe0d3;
+  border-radius: 8px;
+  background: #fff;
+  color: #244a31;
+  font-weight: 700;
+}
+
+.analysis-controls > button:first-child {
+  background: #166534;
+  border-color: #166534;
+  color: #fff;
+}
+
+.analysis-controls button:disabled,
+.analysis-toolbar button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.analysis-reference-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.analysis-reference-actions button {
+  padding: 7px 8px;
+  font-size: 13px;
+}
+
+.analysis-metrics {
+  display: grid;
+  gap: 10px;
+}
+
+.analysis-result-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 2px;
+  color: #153b25;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.analysis-workflow .metric-tile {
+  min-height: 104px;
+  font-size: 14px;
+}
+
+.analysis-empty-result {
+  display: grid;
+  place-content: center;
+  gap: 9px;
+  min-height: 278px !important;
+  padding: 20px;
+  text-align: center;
+  color: #31593d;
+}
+
+.analysis-empty-result svg {
+  margin: 0 auto;
+  color: #77a388;
+}
+
+.analysis-empty-result strong {
+  font-size: 15px;
+}
+
+.analysis-empty-result p {
+  max-width: 230px;
+  margin: 0;
+  color: #637969;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.analysis-workflow .joint-image {
+  position: relative;
+}
+
+.analysis-workflow .joint-angle {
+  font-size: 14px;
+}
+
+.analysis-workflow .joint-angle small {
+  font-size: 12px;
+}
+
+.analysis-workflow .motion-img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.analysis-result-grid {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.analysis-result-grid > * {
+  direction: rtl;
+}
+
+.analysis-workflow .observation,
+.analysis-workflow .exercise-row {
+  font-size: 14px;
+}
+
+.analysis-history-list {
+  display: grid;
+  gap: 9px;
+}
+
+.analysis-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #e1ebe3;
+  border-radius: 9px;
+  background: #fbfefb;
+  font-size: 14px;
+}
+
+.analysis-history-item strong,
+.analysis-history-item span {
+  display: block;
+}
+
+.analysis-history-item span {
+  margin-top: 3px;
+  color: #627568;
+  font-size: 13px;
+}
+
+.analysis-history-item button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 5px 9px;
+  border: 1px solid #cfe0d3;
+  border-radius: 7px;
+  background: #fff;
+  color: #245334;
+  font-weight: 700;
+}
+
+.analysis-history-item button:disabled {
+  color: #7b8580;
+  cursor: not-allowed;
+}
+
+.analysis-footer-links {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  font-size: 14px;
+}
+
+@media (max-width: 1120px) {
+  .analysis-workflow .analysis-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-upload-button {
+    margin-top: 0;
+    align-self: end;
+  }
+
+  .analysis-workflow-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 0.8fr);
+  }
+
+  .analysis-workflow .analysis-side {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .analysis-steps,
+  .analysis-workflow .analysis-toolbar,
+  .analysis-workflow-grid,
+  .analysis-result-grid,
+  .analysis-workflow .analysis-side {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-workflow .analysis-side {
+    display: grid;
+  }
+
+  .analysis-player-card,
+  .analysis-footer-links,
+  .analysis-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analysis-reference-actions {
+    justify-content: stretch;
+  }
+
+  .analysis-reference-actions button {
+    flex: 1 1 130px;
+  }
+
+  .analysis-upload-button {
+    margin-top: 0;
+  }
+
+  .analysis-real-ai-status {
+    grid-column: auto;
+  }
+
+  .analysis-photo,
+  .analysis-photo img,
+  .analysis-photo video {
+    min-height: 220px;
+  }
+}

@@ -1,0 +1,425 @@
+.pose-results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.pose-source-notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #e4f6eb;
+  color: #174d35;
+  border: 1px solid #b1dfc2;
+  border-radius: 12px;
+  padding: 17px 20px;
+  font-size: 15px;
+  line-height: 1.85;
+}
+.pose-source-notice > svg {
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.pose-source-notice p {
+  margin: 3px 0 0;
+  color: #315c47;
+  font-size: 14px;
+}
+.pose-result-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(170px, 0.6fr) minmax(
+      260px,
+      1fr
+    );
+  gap: 18px;
+  direction: ltr;
+  align-items: start;
+}
+.pose-result-layout > * {
+  direction: rtl;
+  min-width: 0;
+}
+.pose-video-wrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #071b12;
+}
+.pose-video-wrap video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 560px;
+  object-fit: contain;
+}
+.pose-video-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.pose-video-status,
+.pose-video-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-height: 210px;
+  padding: 24px;
+  text-align: center;
+  font-size: 15px;
+}
+.pose-video-error {
+  color: #8b3333;
+  background: #fff2f1;
+  border-radius: 10px;
+}
+.pose-video-error p {
+  width: 100%;
+  margin: 0;
+  line-height: 1.8;
+}
+.pose-tracking-switch {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 15px;
+  margin: 15px 0 10px;
+  cursor: pointer;
+}
+.pose-tracking-switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: #278652;
+  flex: 0 0 auto;
+}
+.pose-help {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.9;
+  color: #53695a;
+}
+.pose-measurement-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pose-measurement-stack .metric-tile {
+  min-height: 116px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+}
+.pose-measurement-stack .metric-tile > strong {
+  font-size: 25px;
+  line-height: 1.3;
+}
+.pose-measurement-stack .metric-tile small {
+  color: #e0f7e7;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.pose-measurement-stack .metric-tile > span {
+  font-size: 14px;
+}
+.pose-joint-list {
+  display: flex;
+  flex-direction: column;
+}
+.pose-joint-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e7efe9;
+  font-size: 15px;
+}
+.pose-joint-row:last-child {
+  border-bottom: 0;
+}
+.pose-joint-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pose-joint-row > div:last-child {
+  text-align: left;
+}
+.pose-joint-row small {
+  color: #647969;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.pose-joint-row strong[dir="ltr"] {
+  color: #287d4c;
+  font-size: 22px;
+}
+.pose-unmeasured {
+  color: #876331;
+  font-size: 14px;
+}
+.pose-limitations {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+}
+.pose-limitations p {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  line-height: 1.85;
+  font-size: 14px;
+  margin: 0;
+  color: #415e4b;
+}
+.pose-limitations svg {
+  flex-shrink: 0;
+  margin-top: 5px;
+  color: #559c6b;
+}
+@media (max-width: 1180px) {
+  .pose-result-layout {
+    grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr);
+  }
+  .pose-measurement-stack {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .pose-result-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .pose-result-layout > * {
+    width: 100%;
+  }
+  .pose-measurement-stack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pose-limitations {
+    grid-template-columns: 1fr;
+  }
+  .pose-source-notice {
+    padding: 14px;
+  }
+  .pose-measurement-stack .metric-tile {
+    padding: 14px;
+  }
+  .pose-joint-row small {
+    font-size: 14px;
+  }
+}
+
+.pose-timeline-controls {
+  display: grid;
+  grid-template-columns: minmax(160px, 260px) 1fr;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.pose-current-angle {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #344f43;
+  font-size: 15px;
+}
+.pose-current-angle strong {
+  font-size: 25px;
+  color: #08633e;
+  align-self: flex-start;
+}
+.pose-current-angle small {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #755015;
+}
+.pose-timeline-warning {
+  padding: 13px 17px;
+  border: 1px solid #e9d5a9;
+  border-radius: 10px;
+  background: #fff9ed;
+  color: #795621;
+  font-size: 15px;
+  line-height: 1.8;
+}
+.pose-time-chart {
+  width: 100%;
+  min-width: 0;
+}
+.pose-time-scrubber {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 15px;
+  color: #324d40;
+}
+.pose-time-scrubber input {
+  width: 100%;
+  accent-color: #09875a;
+  cursor: ew-resize;
+}
+.pose-time-scrubber input:disabled {
+  cursor: wait;
+}
+@media (max-width: 600px) {
+  .pose-timeline-controls {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .pose-current-angle {
+    padding: 12px;
+    background: #f3f8f5;
+    border-radius: 10px;
+  }
+}
+
+/* مواءمة جلسات 26 أكتوبر: قياس واضح بلا تصنيف أداء غير موثق. */
+.pose-results {
+  gap: 16px;
+}
+.pose-help,
+.pose-source-notice p,
+.pose-limitations p {
+  font-size: 16px;
+  color: #294738;
+}
+.pose-session-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 14px 18px;
+  background: #f1f7f3;
+  border: 1px solid #c8dbd0;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #234431;
+  line-height: 1.8;
+}
+.pose-session-context strong {
+  width: 100%;
+  color: #563f17;
+}
+.pose-adjacent-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.pose-adjacent-actions > * {
+  min-width: 0;
+}
+.pose-adjacent-actions p,
+.pose-adjacent-actions label,
+.pose-adjacent-actions li {
+  font-size: 16px;
+  color: #233e30;
+  line-height: 1.8;
+}
+.pose-adjacent-actions h3,
+.pose-adjacent-actions h4 {
+  color: #113d2c;
+  font-size: 20px;
+}
+.pose-indicator-table-wrap {
+  overflow: auto;
+  max-height: 430px;
+}
+.pose-indicator-table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  text-align: right;
+  font-size: 15px;
+}
+.pose-indicator-table th {
+  background: #edf5ef;
+  color: #173f2b;
+  padding: 12px;
+  position: sticky;
+  top: 0;
+}
+.pose-indicator-table td {
+  padding: 13px 12px;
+  vertical-align: top;
+  color: #25422f;
+  border-bottom: 1px solid #d9e5dc;
+  line-height: 1.7;
+}
+.pose-indicator-table td small {
+  display: block;
+  font-size: 14px;
+  color: #496252;
+  margin-top: 5px;
+  max-width: 330px;
+}
+.pose-indicator-definitions {
+  padding: 15px 18px;
+  background: #fff;
+  border: 1px solid #cbdcd1;
+  border-radius: 10px;
+  color: #244633;
+  font-size: 16px;
+}
+.pose-indicator-definitions summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.pose-indicator-definitions article {
+  padding: 15px 0;
+  border-bottom: 1px solid #dbe7df;
+  line-height: 1.8;
+}
+.pose-indicator-definitions code {
+  margin-inline-start: 12px;
+  font-size: 12px;
+  direction: ltr;
+  display: inline-block;
+}
+.pose-joint-row small {
+  font-size: 14px;
+  color: #405c49;
+}
+@media (min-width: 761px) {
+  .pose-result-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .pose-measurement-stack {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .pose-measurement-stack .metric-tile {
+    min-height: 98px;
+    gap: 6px;
+  }
+}
+@media (max-width: 900px) {
+  .pose-adjacent-actions {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .pose-measurement-stack {
+    gap: 10px;
+  }
+  .pose-measurement-stack .metric-tile {
+    min-height: 100px;
+  }
+  .pose-session-context {
+    padding: 12px;
+  }
+}

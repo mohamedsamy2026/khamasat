@@ -1,0 +1,403 @@
+.athlete-landing {
+  min-height: 100svh;
+  overflow: hidden;
+  background: #03231f;
+  color: #f7fffb;
+}
+.landing-stage {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 1000px);
+  min-height: 1020px;
+  margin: 0 auto;
+  background: radial-gradient(
+    ellipse at 79% 47%,
+    #124336 0,
+    #05252a 48%,
+    #032020 85%
+  );
+}
+.landing-stage::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    #01191e00 0%,
+    #03291e00 70%,
+    #031b18 100%
+  );
+}
+.landing-scene {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: -3;
+  width: 32%;
+  height: 830px;
+  background: url("/brand/stadium-scene.jpg") left top / contain no-repeat;
+  mask-image: linear-gradient(to right, #000 0, #000 87%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 87%,
+    transparent 100%
+  );
+}
+.landing-lights {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -4;
+  height: 120px;
+  background: url("/brand/stadium-lights.jpg") center top / 100% 100% no-repeat;
+  mask-image: linear-gradient(#000, transparent);
+  -webkit-mask-image: linear-gradient(#000, transparent);
+}
+.landing-grass {
+  position: absolute;
+  inset: 660px 0 auto;
+  z-index: -4;
+  height: 205px;
+  background: url("/brand/stadium-grass.jpg") center / cover no-repeat;
+  mask-image: linear-gradient(transparent, #000 45%, transparent);
+  -webkit-mask-image: linear-gradient(transparent, #000 45%, transparent);
+}
+.landing-content {
+  position: relative;
+  padding: 38px 38px 28px;
+}
+.landing-heading {
+  width: 76%;
+  margin-left: auto;
+  margin-right: 0;
+  text-align: center;
+}
+.landing-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  margin: 0 auto 15px;
+}
+.landing-brand img {
+  width: 112px;
+  height: 89px;
+  object-fit: contain;
+}
+.landing-brand > span {
+  color: #fff;
+  font:
+    900 clamp(36px, 5.1vw, 58px) / 1.05 Arial,
+    sans-serif;
+  letter-spacing: -1.4px;
+}
+.landing-brand b {
+  color: #28e699;
+}
+.landing-heading h1 {
+  margin: 18px 0 24px;
+  color: #fff;
+  font-size: clamp(23px, 3vw, 32px);
+  font-weight: 800;
+  line-height: 1.7;
+}
+.landing-tagline {
+  margin: 0 0 8px;
+  color: #b9d3ce;
+  font-size: 19px;
+}
+.landing-english {
+  margin: 0;
+  color: #bbd5cf;
+  font-size: 19px;
+  letter-spacing: 0.15px;
+}
+.landing-entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  width: 67%;
+  margin: 30px 0 0 auto;
+}
+.landing-entry {
+  display: flex;
+  min-height: 326px;
+  padding: 31px 20px 24px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #f5fff9;
+  border: 1px solid #a2d1c8b3;
+  border-radius: 17px;
+  background: linear-gradient(
+    170deg,
+    #032a29e6 0%,
+    #052e24dc 70%,
+    #245c27ca 100%
+  );
+  box-shadow: inset 0 0 30px #7ccc9c0b;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
+}
+.landing-entry > svg {
+  color: #2ff2a1;
+  flex-shrink: 0;
+}
+.landing-club > svg {
+  color: #fff;
+}
+.landing-entry h2 {
+  margin: 13px 0 7px;
+  font-size: 33px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.landing-divider {
+  width: 33px;
+  height: 3px;
+  margin: 2px 0 12px;
+  border-radius: 4px;
+  background: #3edb9c;
+}
+.landing-entry p {
+  margin: 0 0 19px;
+  color: #def0e7;
+  font-size: 18px;
+  line-height: 1.75;
+}
+.landing-arrow {
+  display: grid;
+  width: 49px;
+  height: 49px;
+  place-items: center;
+  border: 1.5px solid #b0e2cb;
+  border-radius: 50%;
+}
+.landing-entry:hover {
+  border-color: #45e1a5;
+  transform: translateY(-3px);
+  background: linear-gradient(170deg, #073b31f2, #1d5c36ef);
+}
+.landing-entry:focus-visible,
+.landing-access a:focus-visible,
+.landing-access button:focus-visible,
+.landing-brand:focus-visible {
+  outline: 3px solid #56edb2;
+  outline-offset: 5px;
+}
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+  margin-top: 70px;
+}
+.landing-feature {
+  display: flex;
+  min-height: 146px;
+  padding: 22px 9px 18px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  border: 1px solid #99c4afa1;
+  border-radius: 12px;
+  background: linear-gradient(155deg, #0d3629de, #031d1ade);
+  text-align: center;
+  font-size: 17px;
+  line-height: 1.65;
+  cursor: default;
+}
+.landing-feature > svg {
+  color: #effff7;
+}
+.landing-feature:last-child > svg {
+  color: #76f3c0;
+}
+.landing-access {
+  margin: 24px auto 0;
+  text-align: center;
+  font-size: 14px;
+  color: #c8e3d9;
+}
+.landing-access > span,
+.landing-access a,
+.landing-access button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #dafbea;
+}
+.landing-access button {
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.landing-access > p {
+  margin: 9px 0 3px;
+}
+.landing-access small {
+  display: block;
+  color: #b3d6c8;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.landing-access .landing-retry {
+  margin-top: 9px;
+  color: #ffe3b6;
+  text-decoration: underline;
+}
+@media (min-width: 1600px) {
+  .landing-stage {
+    margin-top: 0;
+  }
+}
+@media (max-width: 800px) {
+  .landing-stage {
+    min-height: 900px;
+  }
+  .landing-content {
+    padding: 29px 24px 28px;
+  }
+  .landing-scene {
+    height: 740px;
+    width: 37%;
+  }
+  .landing-heading {
+    width: 78%;
+  }
+  .landing-brand img {
+    width: 95px;
+    height: 77px;
+  }
+  .landing-heading h1 {
+    font-size: 26px;
+    margin-bottom: 18px;
+  }
+  .landing-tagline,
+  .landing-english {
+    font-size: 16px;
+  }
+  .landing-entries {
+    width: 70%;
+    gap: 15px;
+  }
+  .landing-entry {
+    min-height: 284px;
+    padding: 24px 12px;
+  }
+  .landing-entry h2 {
+    font-size: 28px;
+  }
+  .landing-entry p {
+    font-size: 16px;
+  }
+  .landing-features {
+    gap: 10px;
+    margin-top: 52px;
+  }
+  .landing-feature {
+    font-size: 14px;
+    padding-inline: 7px;
+  }
+  .landing-grass {
+    top: 580px;
+  }
+}
+@media (max-width: 540px) {
+  .landing-stage {
+    min-height: 100svh;
+  }
+  .landing-content {
+    padding: 23px 16px 26px;
+  }
+  .landing-heading {
+    width: 100%;
+  }
+  .landing-brand img {
+    width: 86px;
+    height: 70px;
+  }
+  .landing-brand > span {
+    font-size: 40px;
+  }
+  .landing-heading h1 {
+    font-size: 23px;
+    line-height: 1.7;
+    margin: 18px 0;
+  }
+  .landing-tagline {
+    font-size: 14px;
+  }
+  .landing-english {
+    font-size: 14px;
+  }
+  .landing-scene {
+    width: 56%;
+    height: 580px;
+    filter: brightness(0.66);
+  }
+  .landing-entries {
+    width: 100%;
+    gap: 12px;
+    margin-top: 25px;
+  }
+  .landing-entry {
+    min-height: 261px;
+    padding: 24px 10px 20px;
+    background: linear-gradient(170deg, #04312bed, #0c3d2de8);
+  }
+  .landing-entry > svg {
+    width: 42px;
+    height: 42px;
+  }
+  .landing-entry h2 {
+    font-size: 25px;
+    margin-top: 12px;
+  }
+  .landing-entry p {
+    font-size: 14px;
+  }
+  .landing-arrow {
+    width: 39px;
+    height: 39px;
+  }
+  .landing-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 28px;
+    gap: 12px;
+  }
+  .landing-feature {
+    min-height: 127px;
+    font-size: 15px;
+    padding: 18px 8px;
+    gap: 10px;
+  }
+  .landing-feature > svg {
+    width: 31px;
+    height: 31px;
+  }
+  .landing-grass {
+    top: 490px;
+    height: 200px;
+  }
+  .landing-access {
+    font-size: 13px;
+    margin-top: 21px;
+  }
+  .landing-access small {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-entry,
+  .landing-feature {
+    transition: none;
+  }
+}

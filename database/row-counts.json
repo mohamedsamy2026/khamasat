@@ -1,0 +1,22 @@
+{
+  "exportedAt": "2026-10-26T23:48:51.079Z",
+  "snapshot": "repeatable-read transaction",
+  "includesVideoBinaryData": true,
+  "tables": {
+    "__drizzle_migrations": 5,
+    "access_grants": 0,
+    "access_requests": 3,
+    "analyses": 26,
+    "audit_events": 147,
+    "demo_sessions": 19,
+    "exercise_plans": 0,
+    "favorites": 1,
+    "memberships": 4,
+    "notes": 3,
+    "organizations": 42,
+    "players": 112,
+    "users": 2,
+    "video_chunks": 20,
+    "videos": 20
+  }
+}

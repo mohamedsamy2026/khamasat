@@ -1,0 +1,1017 @@
+{
+  "sourceCommit": "70961ca84f93cae0a808ca962f06df24abc88f11",
+  "files": {
+    "HANDOFF_AR.md": {
+      "bytes": 7814,
+      "sha256": "5258b33db167de22c2741cce92a1048f531c6d7a682237814e7c3db48ff1c762"
+    },
+    "database/athlete_ai_backup.sql.gz": {
+      "bytes": 19716997,
+      "sha256": "705fdc84d474eef5b29cb274a114a5c975732d447f88620e8e10cfe44fb71246"
+    },
+    "database/row-counts.json": {
+      "bytes": 482,
+      "sha256": "0ebc2c45f42de335d090f82ba9a1d7b6678afde399c78a66f428900e0c16f403"
+    },
+    "media/manifest.json": {
+      "bytes": 18329,
+      "sha256": "60f87b4b1174905c236d667dff24bf6cfb882fd2b6b26065bc85752e9a8ab253"
+    },
+    "media/videos/video_1.mp4": {
+      "bytes": 482057,
+      "sha256": "9a1bd9a12959b4287951f070cdf333aa5f1a83ce8a4f68ee5364df1a2d194abd"
+    },
+    "media/videos/video_120001.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_120002.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_120003.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_150001.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_150002.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_150003.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_180001.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_180002.mp4": {
+      "bytes": 2632,
+      "sha256": "4ea479cdcf632debc10c2143075266ff6a4ca03b89adee3c6421c80069a9c6fd"
+    },
+    "media/videos/video_30001.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_60001.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_60002.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_60003.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_60004.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_60005.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_60006.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_60007.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_60008.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_90001.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "media/videos/video_90002.mp4": {
+      "bytes": 482057,
+      "sha256": "9a1bd9a12959b4287951f070cdf333aa5f1a83ce8a4f68ee5364df1a2d194abd"
+    },
+    "references/ATHLETE_IQبروتوتايب8.pptx": {
+      "bytes": 2282091,
+      "sha256": "167368f06d235f3db1a31dc00776419abfa509ea3155a85936bb705ad15a96b2"
+    },
+    "references/Pasted_content.txt": {
+      "bytes": 5672,
+      "sha256": "3d7192a32605a1250f6642ad3d910961bb72f0e4ec9a16fa1751c1a557a6e182"
+    },
+    "references/Pasted_content_01.txt": {
+      "bytes": 9204,
+      "sha256": "46815a3d09650b9b6a5945f47a40af6c536d130951ae663715544931e8596e6f"
+    },
+    "references/Pasted_content_02.txt": {
+      "bytes": 9645,
+      "sha256": "a96d2502a2883016d7372a9ff5f9a24956c7a205c7513697cdc09a89e19b9359"
+    },
+    "references/football_biomechanics_ai_client_proposal_ar_261025_213653.pdf": {
+      "bytes": 80826,
+      "sha256": "b24f7a95e7a0f3a5375d666154fd08d14b58d42661f23fc69e28f811a9303270"
+    },
+    "source/.dockerignore": {
+      "bytes": 65,
+      "sha256": "5b44ea5eb13951c8d571d42066afa2473a74b34f2893b315298414baa13b98d8"
+    },
+    "source/.env.example": {
+      "bytes": 659,
+      "sha256": "909249a4d1f013646262bb1f99514e07152ecee350676621d1fb4904d22bfeec"
+    },
+    "source/.gitignore": {
+      "bytes": 1470,
+      "sha256": "968e389d370d9cb843d0b4ea6e464b3dc461bc61e803a0996b2f2a767fa37cbe"
+    },
+    "source/.manus-starter-init.json": {
+      "bytes": 139,
+      "sha256": "8aa7b825a52501d41c53f0d62446efacb8dd4fe3dd26a72f11a62f2ae31e26bc"
+    },
+    "source/.prettierignore": {
+      "bytes": 310,
+      "sha256": "17f593918ed38aec9deac4301d519a4349172c649d1849ce17190cedbde33228"
+    },
+    "source/.prettierrc": {
+      "bytes": 310,
+      "sha256": "087532218269eb851c22dcc3d5234ea46bfa513b494a3d7b167b1c1f48c410c5"
+    },
+    "source/Dockerfile": {
+      "bytes": 327,
+      "sha256": "1f74828d6293c42ffefae4661ede54030e40fa9ce2843cac787ea73d4aca671d"
+    },
+    "source/README.md": {
+      "bytes": 1068,
+      "sha256": "c8465af11fa4da11bcbdc27d83c92554502d71baa69b892b79121be6ab8c16e1"
+    },
+    "source/TODO.md": {
+      "bytes": 49279,
+      "sha256": "a63cbfe84de4540b1e53ff937a5321b9da425913b327b37d1ff4ed5a3b28b78a"
+    },
+    "source/app.config.ts": {
+      "bytes": 116,
+      "sha256": "1070ff992686e4ab8504914d2cc117f72082f01f3561f38e4c2cfb31b7f992f4"
+    },
+    "source/client/index.html": {
+      "bytes": 922,
+      "sha256": "d227bd84c90938efc23e51e9d3aef65e077f84bd297eb442706e76ec78f5a3e7"
+    },
+    "source/client/public/.gitkeep": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source/client/public/__manus__/debug-collector.js": {
+      "bytes": 28175,
+      "sha256": "f82a9aab7088440c13ca916995c935b81dc445ad633ad6394911b4f78aa5fc35"
+    },
+    "source/client/public/brand/analysis-reference.jpg": {
+      "bytes": 61223,
+      "sha256": "2bbd2c95de74b56368a57244e1c4deadcbeb16094c92ce9bbd249a3042f31395"
+    },
+    "source/client/public/brand/joint-reference.jpg": {
+      "bytes": 12902,
+      "sha256": "04a5014b82625077a5b6d8b1ab0071dc2c44bfc9dd1c8db0417c95c6ff1cf4e3"
+    },
+    "source/client/public/brand/mark.png": {
+      "bytes": 21394,
+      "sha256": "a5850d750ecaa9062d306f33fe07af2b24260a7b10e933fe218286bdd038a522"
+    },
+    "source/client/public/brand/motion-reference.jpg": {
+      "bytes": 10451,
+      "sha256": "60babf772be0120c9d879033ebd687285d10c66e842803633a42e2dfe2e32496"
+    },
+    "source/client/public/brand/player-1.jpg": {
+      "bytes": 17821,
+      "sha256": "edafd7b07a7125fbfa42705c9c67138f827984a7bd8ba3c1d49266aa16259c1c"
+    },
+    "source/client/public/brand/player-2.jpg": {
+      "bytes": 2500,
+      "sha256": "4ac5fb12d9242259306b207e56be5a4e460c073bcb69c8e8bc1059e09d5e4a65"
+    },
+    "source/client/public/brand/player-3.jpg": {
+      "bytes": 2437,
+      "sha256": "15a665aa66cabe75bf02131cedbc5f1f782a40110e25053367cb7f5ae8c1c004"
+    },
+    "source/client/public/brand/player-4.jpg": {
+      "bytes": 2425,
+      "sha256": "6500a09e4edaa3ef340eabca6b11731551b5c9d00eb1b8075268149e261bb07c"
+    },
+    "source/client/public/brand/player-5.jpg": {
+      "bytes": 2443,
+      "sha256": "47a10bee7cbcf9bcde81cc3a7fc28de14ea50168e506cac8db0e5adaa9bc1755"
+    },
+    "source/client/public/brand/stadium-grass.jpg": {
+      "bytes": 36346,
+      "sha256": "908926bfe3d130dc1200d7b4acddf7cb33e13a5d8452394d434c441554d8f965"
+    },
+    "source/client/public/brand/stadium-lights.jpg": {
+      "bytes": 6618,
+      "sha256": "27690f830f2bd9657326b5c81d82741ffc700c58b41f429a1c8b316826a7f46d"
+    },
+    "source/client/public/brand/stadium-player.jpg": {
+      "bytes": 80316,
+      "sha256": "326fe4050aae7ee77019e4e398198558b23f40317d254805faadc10750265a05"
+    },
+    "source/client/public/brand/stadium-scene.jpg": {
+      "bytes": 99627,
+      "sha256": "fa58eb4642dc87ff3da4f67bc3bd938a687127f8497f47a95992a43d510c56b0"
+    },
+    "source/client/public/manus-routes.json": {
+      "bytes": 737,
+      "sha256": "90afb3198a6d3284f63a78ce28fbf3d22ca323fb9e72ec259e5bb7e02b650cc4"
+    },
+    "source/client/public/robots.txt": {
+      "bytes": 26,
+      "sha256": "331ea9090db0c9f6f597bd9840fd5b171830f6e0b3ba1cb24dfa91f0c95aedc1"
+    },
+    "source/client/src/App.tsx": {
+      "bytes": 2822,
+      "sha256": "58213649b9664e0b5d0345d842bd4d47267fe4313e6891d0be23aff593ab4ff7"
+    },
+    "source/client/src/_core/hooks/useAuth.ts": {
+      "bytes": 2857,
+      "sha256": "2d87f1597ab79277ab1755353fc21d362aa05c4e20b79c320001ead15923cca7"
+    },
+    "source/client/src/app-readability.css": {
+      "bytes": 5910,
+      "sha256": "74559e653e90a4ebe9b9cf113cf7c7adfff531228f8ef95069bbed85bfa60d98"
+    },
+    "source/client/src/components/AIChatBox.tsx": {
+      "bytes": 10851,
+      "sha256": "c97ae745ae8f4db0b5e1a96d851fe9fd6943c53bc1bc6c28603bce36058ce28a"
+    },
+    "source/client/src/components/DashboardLayout.tsx": {
+      "bytes": 8998,
+      "sha256": "4f5d5829ff8a47b800d92a884848b4d7abddeafebb3af939cf5a96624a24f06c"
+    },
+    "source/client/src/components/DashboardLayoutSkeleton.tsx": {
+      "bytes": 1628,
+      "sha256": "7b6eab8ac4d4118bdf2be88f23e7db5318d975ac03e6451f773d5eb15feb34cc"
+    },
+    "source/client/src/components/ErrorBoundary.tsx": {
+      "bytes": 1688,
+      "sha256": "3b0bdb7a19758fcd440138ccfb5f306b96836564f15d7c8c9663d7dd7417e972"
+    },
+    "source/client/src/components/ManusDialog.tsx": {
+      "bytes": 2432,
+      "sha256": "66237a756ee50b4195a074f689aa97dd4ec445cbbc6f0d11f12bb32a6fb4cd0d"
+    },
+    "source/client/src/components/Map.tsx": {
+      "bytes": 4988,
+      "sha256": "32336112510f652956bafbeab95de4e9057403a01dd3d24ec77040b850f12317"
+    },
+    "source/client/src/components/athlete/EvaluationSummary.tsx": {
+      "bytes": 10796,
+      "sha256": "618aa74dab0a231555287e8a814d9e289ab41fa73eafab756c3761649a6c4d27"
+    },
+    "source/client/src/components/athlete/ExercisePlans.tsx": {
+      "bytes": 18468,
+      "sha256": "7fa49dca475c0e731e20cc1143727bd3f36fd9713d8e5dcbcbe6f390dce53ef5"
+    },
+    "source/client/src/components/athlete/Layout.tsx": {
+      "bytes": 15619,
+      "sha256": "c3878abd56f267d7c01757665e546d9e621402cb80b4385616411d72cae63346"
+    },
+    "source/client/src/components/athlete/PlayerSessionWorkspace.tsx": {
+      "bytes": 5487,
+      "sha256": "3985376714adb818202625bb95d958a7e131454772f7649d9d20a6343a9e151f"
+    },
+    "source/client/src/components/athlete/PoseAngleTimeline.tsx": {
+      "bytes": 5595,
+      "sha256": "09975ce4b7587a575a49889fa20e01ab3c0fde49ba2a5a78fdb43bc707c5f9e5"
+    },
+    "source/client/src/components/athlete/PoseResults.tsx": {
+      "bytes": 17773,
+      "sha256": "ca9fbb5ccbf6d23e5ae1977247983beb352caef434d7e75c6ffe0620e1ec247d"
+    },
+    "source/client/src/components/athlete/ProfileVideoStrip.tsx": {
+      "bytes": 8755,
+      "sha256": "a0e8707324ae83f72648df92c35d9aa5fc3286c66e986aa3148d5bf0d50045d7"
+    },
+    "source/client/src/components/athlete/SessionNotes.tsx": {
+      "bytes": 10249,
+      "sha256": "6c0fcda8a94053d0526ef4a7897c50cecb641478b050e5b20ac8e44b149acc21"
+    },
+    "source/client/src/components/athlete/SkillVideos.tsx": {
+      "bytes": 30550,
+      "sha256": "ab63e500456bbe10cc61db61b1bff0076e2f1403c6f20c5d46540ba980d89cb7"
+    },
+    "source/client/src/components/athlete/UI.tsx": {
+      "bytes": 12146,
+      "sha256": "c91119e0eee468c7f2a5fffab79431bac8d9885cc24a3a62f96775392015226d"
+    },
+    "source/client/src/components/athlete/VerifiedReportBody.tsx": {
+      "bytes": 8256,
+      "sha256": "146bda7c9363b1fc63a81df562a3ad4c9bfe24baf36d06544a5c62e74c955682"
+    },
+    "source/client/src/components/athlete/pose-results.css": {
+      "bytes": 7947,
+      "sha256": "a559af18662bae97c9e0d7738d485bfc5d7612203c2daf9839c054c294e228c9"
+    },
+    "source/client/src/components/athlete/session-evaluation.css": {
+      "bytes": 9753,
+      "sha256": "a14f126738779077f44e4684d6d1aef85311a72f8c87c0e2ed2ad7adc8502249"
+    },
+    "source/client/src/components/athlete/skill-videos.css": {
+      "bytes": 6579,
+      "sha256": "06f5230d4085d9af5fc17e9f3a2e7e9e2465f7ce7df91701c16a3d8ef61abf85"
+    },
+    "source/client/src/components/ui/accordion.tsx": {
+      "bytes": 2048,
+      "sha256": "7b96cf50388ad3d07be64924ab33ba5f63b79a6a5749ebe4d31c789c0bc00d44"
+    },
+    "source/client/src/components/ui/alert-dialog.tsx": {
+      "bytes": 3866,
+      "sha256": "aeecd7967eb0be3bad2753b6633d9a43cc4c08cb35de872ffdc0b9f2b6a9b26c"
+    },
+    "source/client/src/components/ui/alert.tsx": {
+      "bytes": 1622,
+      "sha256": "eccfc7f6ca9d51407cb413a3ca4b5ac721898ac93d38e95c02c35188ad674abe"
+    },
+    "source/client/src/components/ui/aspect-ratio.tsx": {
+      "bytes": 269,
+      "sha256": "654f5d6e9ed17472305d7e6fc5de30453875ffae585f5d064aedc9e6945bdbb0"
+    },
+    "source/client/src/components/ui/avatar.tsx": {
+      "bytes": 1090,
+      "sha256": "c2382ff71d7ef3492096ed6ef35bf82e1fd421a81d55ca80453f5f5138eac360"
+    },
+    "source/client/src/components/ui/badge.tsx": {
+      "bytes": 1639,
+      "sha256": "51fd797c59e63d164ade736769f19f26e41c157daba29aa0b327b3b226f4d4ac"
+    },
+    "source/client/src/components/ui/breadcrumb.tsx": {
+      "bytes": 2371,
+      "sha256": "dd84657e30691ea7f14a785c13b660d6cd626c08ba1df8439c3eca858ee3cd7e"
+    },
+    "source/client/src/components/ui/button-group.tsx": {
+      "bytes": 2220,
+      "sha256": "ba1d824f0f4d8b5dd78a80fa766e3543eefb9173143652be2c7cb765af1864f5"
+    },
+    "source/client/src/components/ui/button.tsx": {
+      "bytes": 2097,
+      "sha256": "b08b4785e03566c7a6063b3d57234deae41649676870cbbb9ab2448d816e1739"
+    },
+    "source/client/src/components/ui/calendar.tsx": {
+      "bytes": 7663,
+      "sha256": "89308bce82e8b23b611cfbc88bc19f7b341d7109ab9a2838c04cb50922113501"
+    },
+    "source/client/src/components/ui/card.tsx": {
+      "bytes": 1997,
+      "sha256": "1397e7d264d90162220ea7473b311e434651886267c71e7f58d4488be9d8ff39"
+    },
+    "source/client/src/components/ui/carousel.tsx": {
+      "bytes": 5603,
+      "sha256": "42f66e6fde568c209df5d58a4ca13c3ae92d120a04fd99f7be695d6a570ef0a9"
+    },
+    "source/client/src/components/ui/chart.tsx": {
+      "bytes": 10113,
+      "sha256": "47c4de202fe1dc229af94d2c86197251d279bee131d2a6fb75ab9e58cec71aab"
+    },
+    "source/client/src/components/ui/checkbox.tsx": {
+      "bytes": 1218,
+      "sha256": "4fc309590e66d3c41e3be5fb73f988b0e916e7bf5fff321c22c3a64cd4fe97cf"
+    },
+    "source/client/src/components/ui/collapsible.tsx": {
+      "bytes": 791,
+      "sha256": "95b5b9ea89a4105045c58b7eba539e57a1f4abc5a54d43ea0f7168f46b645eeb"
+    },
+    "source/client/src/components/ui/command.tsx": {
+      "bytes": 4838,
+      "sha256": "47910540789d4de9e890de63bfc0046f9cf6bfaa86d496a98c79622900f8520c"
+    },
+    "source/client/src/components/ui/context-menu.tsx": {
+      "bytes": 8284,
+      "sha256": "fe63c0a0dcabe749874ad19e07dee8418337c62dd64452fc08b5abf27b49b9eb"
+    },
+    "source/client/src/components/ui/dialog.tsx": {
+      "bytes": 6023,
+      "sha256": "a0d473b7c28d783d8b9733419db6d154557397f588689b8f61e7320853692885"
+    },
+    "source/client/src/components/ui/drawer.tsx": {
+      "bytes": 4255,
+      "sha256": "573deecc31f90fcd96f53a37b2e5363eb326fe737cbdb28cac38a5d014734fc8"
+    },
+    "source/client/src/components/ui/dropdown-menu.tsx": {
+      "bytes": 8434,
+      "sha256": "ede99252b737a29eb1f05370956e2b842be161b6a661f1429155ac561653d029"
+    },
+    "source/client/src/components/ui/empty.tsx": {
+      "bytes": 2406,
+      "sha256": "c0b612929b15fd498b984d8d98d1b082a3eb294be5aa8eb9cb53b67cf152f465"
+    },
+    "source/client/src/components/ui/field.tsx": {
+      "bytes": 6057,
+      "sha256": "f093424ca5eadf43d46b020ed780aee7aa5f6d90d0b48fb50c031e3d7b0528c7"
+    },
+    "source/client/src/components/ui/form.tsx": {
+      "bytes": 3801,
+      "sha256": "0157362d572713567d989b726277879e75c60c24684ade4aef854867dc2fac48"
+    },
+    "source/client/src/components/ui/hover-card.tsx": {
+      "bytes": 1525,
+      "sha256": "bdfe831708e7de6b9fbb14d8fe5af5a0985f67cff3c2b5755b4b570c3b4e7ad5"
+    },
+    "source/client/src/components/ui/input-group.tsx": {
+      "bytes": 5066,
+      "sha256": "f62f2be2ad4c2c7711e7b25b0d6c03572f7871cb4022e9f4f6860dcd77dd9e57"
+    },
+    "source/client/src/components/ui/input-otp.tsx": {
+      "bytes": 2253,
+      "sha256": "45fc7fed882aa5024d8eea52d9b392d13b1d80f2b7f846365bc2586e3d16253d"
+    },
+    "source/client/src/components/ui/input.tsx": {
+      "bytes": 2728,
+      "sha256": "0aaad971269e84519fb14928a70777db539b4cacf9f145fecd905ba483a199c6"
+    },
+    "source/client/src/components/ui/item.tsx": {
+      "bytes": 4513,
+      "sha256": "89f2ed48c2270064d63e0a40f755c1da14e99e7db46bceac56d6dee7b45b8798"
+    },
+    "source/client/src/components/ui/kbd.tsx": {
+      "bytes": 866,
+      "sha256": "4f8f3e521b2b007643b8a2c8f86cf547bd87e703dc2bed067083ca48f901d6ad"
+    },
+    "source/client/src/components/ui/label.tsx": {
+      "bytes": 602,
+      "sha256": "7fdad17d8e83912ad0cfc372c551a901ab98523ef17c0792a17c592a147db732"
+    },
+    "source/client/src/components/ui/menubar.tsx": {
+      "bytes": 8405,
+      "sha256": "53fb1c058fabaf0cfb3fb2cfdb9b17ccc8762376d62cc011150d919209b82c1a"
+    },
+    "source/client/src/components/ui/navigation-menu.tsx": {
+      "bytes": 6680,
+      "sha256": "aafccbe2b05d9f80b7d007301b51aaede4692efc468304c5fb11b21cd0c0ef43"
+    },
+    "source/client/src/components/ui/pagination.tsx": {
+      "bytes": 2726,
+      "sha256": "8f0d822b4688eb131e37fbf2330e19b269ab6487583be3249b98f3b68bb07928"
+    },
+    "source/client/src/components/ui/popover.tsx": {
+      "bytes": 1629,
+      "sha256": "5e7bec05904d9091a7b53963f5b49660bf3564b02a057ef8640ab6855d6e32fd"
+    },
+    "source/client/src/components/ui/progress.tsx": {
+      "bytes": 731,
+      "sha256": "2297e3c13d5b2a04a9164c3900c8cae2e477c07ebed35c4bbda98d1232ab7b7e"
+    },
+    "source/client/src/components/ui/radio-group.tsx": {
+      "bytes": 1459,
+      "sha256": "025f03d81d4e304eb27d94e6517f37072a3941df8f8603ac55cfb42b17cd99ef"
+    },
+    "source/client/src/components/ui/resizable.tsx": {
+      "bytes": 2023,
+      "sha256": "52e1027a4b4a5f70f0479f69fe40046dfa112952b7e568292727e1618348ee80"
+    },
+    "source/client/src/components/ui/scroll-area.tsx": {
+      "bytes": 1637,
+      "sha256": "793c5d69e6e5ce8bcbe453b8834d53f3a90839fc8e8e1f9fe5f77e7626566677"
+    },
+    "source/client/src/components/ui/select.tsx": {
+      "bytes": 6297,
+      "sha256": "40945665ec8363e55ae38f26115ee763cbc5548bed585eed569d406cbc4b7a75"
+    },
+    "source/client/src/components/ui/separator.tsx": {
+      "bytes": 690,
+      "sha256": "23bbf3f74d01f55533f6f22ebbc2b299137421e07896cb7af21245756a10c27e"
+    },
+    "source/client/src/components/ui/sheet.tsx": {
+      "bytes": 4107,
+      "sha256": "ab22e38f2cf312a31a84fb91f7e912f0da66e809f6e1ae675ec6cf0c8ec0ba61"
+    },
+    "source/client/src/components/ui/sidebar.tsx": {
+      "bytes": 21946,
+      "sha256": "5217b07ddc4cfa767cc003ea39cda4a01fcea015a9de42752bb4f800af0475cb"
+    },
+    "source/client/src/components/ui/skeleton.tsx": {
+      "bytes": 279,
+      "sha256": "1f75b999a5ad2f65e8fb807faa2b3fccef9eb333996fb4c9030575dac7393091"
+    },
+    "source/client/src/components/ui/slider.tsx": {
+      "bytes": 1988,
+      "sha256": "9c458646597836916678a9bce2f3064d4d5cdb0c65d32d92bc71f57d7569fb6b"
+    },
+    "source/client/src/components/ui/sonner.tsx": {
+      "bytes": 561,
+      "sha256": "a65fe9ded89363ec546f28401a26caec1a3aa38c52259eb829cfa33723dbe3a5"
+    },
+    "source/client/src/components/ui/spinner.tsx": {
+      "bytes": 335,
+      "sha256": "ecd836d476573adb4403747c3457339276805433c20eacf3408303b76ec283ff"
+    },
+    "source/client/src/components/ui/switch.tsx": {
+      "bytes": 1168,
+      "sha256": "688cccb52220e05f6770fb5e8296375f2a784bcf6585eb26a721a9f29361ab60"
+    },
+    "source/client/src/components/ui/table.tsx": {
+      "bytes": 2445,
+      "sha256": "085566291cf03c9fea590aa9b77339feebf04cf8ce23494a3667f84bf4811e29"
+    },
+    "source/client/src/components/ui/tabs.tsx": {
+      "bytes": 1963,
+      "sha256": "394b62295cee5185e858bcabfafcd5a7287910944c962fbd9c1c06444b22cedb"
+    },
+    "source/client/src/components/ui/textarea.tsx": {
+      "bytes": 2613,
+      "sha256": "ffbad961ec02f9ca23f4157daa1a4139960c4477a245c216a793b4692dec142c"
+    },
+    "source/client/src/components/ui/toggle-group.tsx": {
+      "bytes": 1936,
+      "sha256": "92e7640e30c4ae3ffd775e9a3d845327c26d9ce0f9f39555c2e7cfc2c8671c4d"
+    },
+    "source/client/src/components/ui/toggle.tsx": {
+      "bytes": 1563,
+      "sha256": "a922c5e0534b9fd556ff8a8b56e25f7d24544be6050472cdd1ea003b8a0f3e47"
+    },
+    "source/client/src/components/ui/tooltip.tsx": {
+      "bytes": 1886,
+      "sha256": "6f0c581e2018d676e43c0b4b5aeb62d3fe68e65907cf748548208d75ac212677"
+    },
+    "source/client/src/const.ts": {
+      "bytes": 1563,
+      "sha256": "25ac3a1bad60c862c51e3eb88154c18f755480428279f6ce1c5c87f0dff3e5f3"
+    },
+    "source/client/src/contexts/ThemeContext.tsx": {
+      "bytes": 1467,
+      "sha256": "e025cdb51ad747757235b16dccbb39b5e949cdf93fa9a822ff81ef6e32f65924"
+    },
+    "source/client/src/hooks/useComposition.ts": {
+      "bytes": 2333,
+      "sha256": "674c515075a2f318d4ec2291313ba552488de0b2c1aac7f36f3d71c4e34d434e"
+    },
+    "source/client/src/hooks/useMobile.tsx": {
+      "bytes": 584,
+      "sha256": "464e778a9da49481e3c6dac4f92ff589e01349b33063a74c45435cfeed81e1c0"
+    },
+    "source/client/src/hooks/usePersistFn.ts": {
+      "bytes": 471,
+      "sha256": "60cc14f39a3f8b212d7baf4beeaf35f81e09a7c78e4154bcca3477e010879511"
+    },
+    "source/client/src/index.css": {
+      "bytes": 40989,
+      "sha256": "655bcd97d489e440e64ff77f3149edce7032ae77bb80cb2c8acd53d55f015451"
+    },
+    "source/client/src/lib/athleteApi.tsx": {
+      "bytes": 11417,
+      "sha256": "626d816936eb5547c3d1e55b69f05e441895c31a8d491e588d43a292ab100854"
+    },
+    "source/client/src/lib/poseEngine.ts": {
+      "bytes": 15136,
+      "sha256": "34feef9264659f3b22ee77d599c4a1c18869cf097faa3bcb93ba6c8a1b7b9333"
+    },
+    "source/client/src/lib/trpc.ts": {
+      "bytes": 162,
+      "sha256": "d883ad43f46eaf73342924feaf5342ce601d04abe1a828076625071931cc0ef3"
+    },
+    "source/client/src/lib/utils.ts": {
+      "bytes": 169,
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    "source/client/src/main.tsx": {
+      "bytes": 2587,
+      "sha256": "0e322fd292220e189d5acc65a89e65fee16d29a5c261625ce758cde3bfd72fd2"
+    },
+    "source/client/src/pages/Academies.tsx": {
+      "bytes": 28036,
+      "sha256": "49b5db94f08a8589aa96b2d2c0cebc7b59c8530a6ee374f5ad8fc1dc9dca5251"
+    },
+    "source/client/src/pages/Analysis.tsx": {
+      "bytes": 33767,
+      "sha256": "212fa67e6f033f068cf9a0ef77b85f04bf2b4b95770f84d66c1e473c2c0902c2"
+    },
+    "source/client/src/pages/Clubs.tsx": {
+      "bytes": 34460,
+      "sha256": "5c3f9e49c747ff7ec5de5016b6631d665e4b6fe1e602e711c42171db6105d4ed"
+    },
+    "source/client/src/pages/ComponentShowcase.tsx": {
+      "bytes": 58315,
+      "sha256": "d3905f3521d77e97b7d7c6198a6f915bf45f68223c74552e7e728f4fe10ca79a"
+    },
+    "source/client/src/pages/Home.tsx": {
+      "bytes": 6817,
+      "sha256": "9961d0d0086f47ec8c38079cbdb8b990df3bb132448b990c6ed34319f088e1b5"
+    },
+    "source/client/src/pages/NotFound.tsx": {
+      "bytes": 2589,
+      "sha256": "8bbda8d05e5a36c77e53892faab278686c02501a1beaf3c0d44ed2ebc8e38eb0"
+    },
+    "source/client/src/pages/PlayerProfile.tsx": {
+      "bytes": 35857,
+      "sha256": "5a8711d07a2c7ebc5d8dc7ef6afca71be7ec6575ff4b1cb79736a7c52f212460"
+    },
+    "source/client/src/pages/Reports.tsx": {
+      "bytes": 32173,
+      "sha256": "62173680d68ce0eac41494aba8550e9b56ea94951647bc720ce42febf83b920d"
+    },
+    "source/client/src/pages/Requests.tsx": {
+      "bytes": 13215,
+      "sha256": "abfa580005c6d417cafc948f9724f2a076582f34ae7fc8d38abf3cf0165d2da0"
+    },
+    "source/client/src/pages/SupportPages.tsx": {
+      "bytes": 33665,
+      "sha256": "b19b14693f8c58a373af53ed8b194f7325422493b3e37d4fc972a5d492f3f596"
+    },
+    "source/client/src/pages/analysis-cv.css": {
+      "bytes": 2073,
+      "sha256": "4a7d6ca6f1abc275fc50be7bf4d2889f619732b916a18303693a4a0d649e9a04"
+    },
+    "source/client/src/pages/analysis-workflow.css": {
+      "bytes": 8393,
+      "sha256": "227ede916e022d860fa75f9dbd78c3cfbd84a46b5490f901d79482c3cd18d424"
+    },
+    "source/client/src/pages/athlete-pages.css": {
+      "bytes": 13557,
+      "sha256": "87f037bea5e9d78a6a751bc4a127ca418caeacc830dc07cf760095b8c8ae1704"
+    },
+    "source/client/src/pages/home-reference.css": {
+      "bytes": 7626,
+      "sha256": "42ed8765634ab31b29cd24bb1f0df5a0d4e2c0ba778fb70bb119f5289d512841"
+    },
+    "source/client/src/pages/player-reference.css": {
+      "bytes": 12544,
+      "sha256": "161a3a4bc72d587aace6bea942969b10cb24c22618dcb5a0bf1a225d4d7da2f6"
+    },
+    "source/client/src/platform.d.ts": {
+      "bytes": 175,
+      "sha256": "c7bf4fce9e1b0d4942137416ee3cedf295ff01d29e293446ba4672f210d7c383"
+    },
+    "source/components.json": {
+      "bytes": 388,
+      "sha256": "8be0e54515838be398164884e96319b52bcfcbd52b2e63171d51df4131cfcb03"
+    },
+    "source/demo-assets/SOURCE.md": {
+      "bytes": 3250,
+      "sha256": "58fcddffaceaa471203812987c174d70b8b28f71ebef5b767fad24a7b642a78e"
+    },
+    "source/demo-assets/shooting-example.mp4": {
+      "bytes": 1009285,
+      "sha256": "6658c89b2a8298e74fc5d6d81e12232fe84d83f716a10339d757f78bcfb3f564"
+    },
+    "source/docs/measurement-audit.md": {
+      "bytes": 3359,
+      "sha256": "70ff5cf9b0a84c9b2246560c05d836ca8d016a87d401fb7eb62fc5a777ccfd9e"
+    },
+    "source/drizzle/0000_initial_users.sql": {
+      "bytes": 497,
+      "sha256": "96168d50097c6d417b7449651a2e617a98e7ffd93dbc832e9cf1d2a0c237a0ec"
+    },
+    "source/drizzle/0001_narrow_rockslide.sql": {
+      "bytes": 10211,
+      "sha256": "b293c559f829e2ed1d71ba1ef4640a610d79e4f4b2fbbb3fb77460baa1061c25"
+    },
+    "source/drizzle/0002_demo_session_pose_persistence.sql": {
+      "bytes": 1251,
+      "sha256": "5503e1cec14da177619689796be3e7b7299e9d09e548372b70c32e8413aa7633"
+    },
+    "source/drizzle/0003_video_metadata_analysis_state.sql": {
+      "bytes": 144,
+      "sha256": "c5acc335dfecd24c2ef38df32bdedbd6bfd62d9f6c954e62969a8939c3a19eac"
+    },
+    "source/drizzle/0004_truthful_evaluation_notes_plans.sql": {
+      "bytes": 4338,
+      "sha256": "85917ea63f636f9bf9186b689007bc3b2c97a8efd0321db1da5c1db29f711d78"
+    },
+    "source/drizzle/meta/0000_snapshot.json": {
+      "bytes": 2593,
+      "sha256": "3373992fde36bcda0608d39dc4e51274c01b9505a4616a260a3845c00afad816"
+    },
+    "source/drizzle/meta/0001_snapshot.json": {
+      "bytes": 36034,
+      "sha256": "5077e1610d7f16ab026097127f6ec4b3bf0dcc46eadb35c6aedf2f5d5c0ff236"
+    },
+    "source/drizzle/meta/0002_snapshot.json": {
+      "bytes": 39286,
+      "sha256": "0ab6e74c58124593b19a63892c2c2908f645e62587e70976df4fa66741922e1c"
+    },
+    "source/drizzle/meta/0003_snapshot.json": {
+      "bytes": 39673,
+      "sha256": "b7072390fef5d1bfc9ba67892051261b9d9790a8ce45cd07b84f4783c847d806"
+    },
+    "source/drizzle/meta/0004_snapshot.json": {
+      "bytes": 48237,
+      "sha256": "c957bad57d96be92002060f27b55761649f0b8fa9fae886c75e443f3cafad7f7"
+    },
+    "source/drizzle/meta/_journal.json": {
+      "bytes": 819,
+      "sha256": "21cee77d35daa70dfa306fd44317794aaec15032b37dad982fac4fdae367b0ac"
+    },
+    "source/drizzle/migrations/.gitkeep": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source/drizzle/relations.ts": {
+      "bytes": 27,
+      "sha256": "85acb8ece8fbb5031fc56fa8c70338d9b8b06ef3b032391fff8532c6373c7186"
+    },
+    "source/drizzle/schema.ts": {
+      "bytes": 14755,
+      "sha256": "e3742ce0a7996ad04c213b7c5f1ac5ada8d5ebb3dde87fe4b50effdf583667c7"
+    },
+    "source/drizzle.config.ts": {
+      "bytes": 353,
+      "sha256": "9610673b3fe7b6b950a8e7e54cb1e91f9dd25f87d7ae6a41d2f6ada957065d01"
+    },
+    "source/models/README.md": {
+      "bytes": 2609,
+      "sha256": "b451ff165b8de91b9b6786ef55c2ef585925dfaeeaf10af1e38f0cbc1ffbed87"
+    },
+    "source/models/pose_landmarker_lite.task": {
+      "bytes": 5777746,
+      "sha256": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a"
+    },
+    "source/package.json": {
+      "bytes": 3722,
+      "sha256": "bacb330dd48abec16fc7e8ed78d01794ed96a9d3a3b76c9b1435a96c50c289c7"
+    },
+    "source/patches/wouter@3.7.1.patch": {
+      "bytes": 918,
+      "sha256": "4e16e6ff3fde7d6c1024d3e0c8605dc9eb6afb690d0d49958c2f449091813072"
+    },
+    "source/plan.md": {
+      "bytes": 25217,
+      "sha256": "c7f1b6f901a8382c365dc55c9cf2a47001534dbf9310aa98125ab99ee78c1433"
+    },
+    "source/pnpm-lock.yaml": {
+      "bytes": 330359,
+      "sha256": "828776d96e6ae2f000ea116b1f8b8f8dfabb3b3147937d6cc09955209d95d548"
+    },
+    "source/pnpm-workspace.yaml": {
+      "bytes": 179,
+      "sha256": "2dea379ce6ecf9c8a824f599e3c325188b3870e93b71885fa907e17bbd2e43a0"
+    },
+    "source/server/_core/context.ts": {
+      "bytes": 658,
+      "sha256": "a43ea9ca8624270a83857d61a7154f17c48bb2c19126d1ee037a37345f6bda86"
+    },
+    "source/server/_core/cookies.ts": {
+      "bytes": 293,
+      "sha256": "387ae5a0e5050a3bdb6d5ae6959a2135db5bb0955fb87840573ec7f5cfaad92f"
+    },
+    "source/server/_core/dataApi.ts": {
+      "bytes": 1881,
+      "sha256": "0cc7c30454ab6ab4d1b2ca04566237cccd951ad2276cf85a510a36c142201e2c"
+    },
+    "source/server/_core/env.ts": {
+      "bytes": 733,
+      "sha256": "0fa1262a9f8485ddda5753030f45da720df0b7f725ffc9f134fcff062e41ac56"
+    },
+    "source/server/_core/heartbeat.ts": {
+      "bytes": 6755,
+      "sha256": "4e939797cf350e8b05d9ac2b69be9e904f8cf2125c945d0a1fbd8b1667a38c5a"
+    },
+    "source/server/_core/imageGeneration.ts": {
+      "bytes": 4878,
+      "sha256": "6e03c012301183c9475ea6442a7935990d9d0345d08ddb49942714ba7d31e8f5"
+    },
+    "source/server/_core/index.ts": {
+      "bytes": 2342,
+      "sha256": "a471706437168c9086715b9060393adafb36a5635956b27a4ac36ed2802f7883"
+    },
+    "source/server/_core/llm.ts": {
+      "bytes": 10694,
+      "sha256": "7b61d13fdc472875555e66cf0ff9558fb1b7e375d1791503eb556639ca059760"
+    },
+    "source/server/_core/map.ts": {
+      "bytes": 9126,
+      "sha256": "feb00c01c41bf3a9ab409c543018c7524c1b92179dc7fa775a197a8f2959409b"
+    },
+    "source/server/_core/notification.ts": {
+      "bytes": 3139,
+      "sha256": "550bf6544bf792b6d13c68539679deb363b70fbf07c0dbde189a98787f66f003"
+    },
+    "source/server/_core/oauth.ts": {
+      "bytes": 2480,
+      "sha256": "ee81d03837e70e7d9ec409f5477aaead1522554ef3113c7787a1bfc8e146af56"
+    },
+    "source/server/_core/publicConfig.ts": {
+      "bytes": 579,
+      "sha256": "4e7da40b08f2a068c63a1412276b07e86228c047f1b453aaaaa2db770fe17d38"
+    },
+    "source/server/_core/sdk.ts": {
+      "bytes": 10413,
+      "sha256": "03403b4c1e07dd24016f556ffdec402a18754b2f1cbf72c35a465d4346b112ff"
+    },
+    "source/server/_core/storageProxy.ts": {
+      "bytes": 1392,
+      "sha256": "dec37a868cf4d82d4cadf18ba279e3aa60ff863c9026ecd2a2165650d2d968e0"
+    },
+    "source/server/_core/systemRouter.ts": {
+      "bytes": 709,
+      "sha256": "61bb2c904da1fa08a425f8882aa3b23003bba7266ce00b2d9fcd685e5d4bffaf"
+    },
+    "source/server/_core/trpc.ts": {
+      "bytes": 1033,
+      "sha256": "95679492e0478938f9bab6e3388ba6a95d3ab3329e6ff2eb9686e638cd07d98e"
+    },
+    "source/server/_core/types/cookie.d.ts": {
+      "bytes": 137,
+      "sha256": "c2ed733d67b16ae4621164dbce09e99de0233b4a0ed05227bc35096822173c05"
+    },
+    "source/server/_core/types/manusTypes.ts": {
+      "bytes": 1406,
+      "sha256": "d073995b792a4376177bf7270cbcf3a670d4e72efb8eb6a83ecb55043cc729c3"
+    },
+    "source/server/_core/vite.ts": {
+      "bytes": 2078,
+      "sha256": "b4c8e9ab746905b2378ad613705195627b85d2d676db00700c5ab5ab9fda345d"
+    },
+    "source/server/_core/voiceTranscription.ts": {
+      "bytes": 8026,
+      "sha256": "6d59dce1eb7f40ab6a9d2203cbd49bb90eb1141bc3389ff3c8a57987b62901c7"
+    },
+    "source/server/athlete/actor.ts": {
+      "bytes": 6615,
+      "sha256": "600755517d94b0965bb9c3286627acac577412423c25176c6e286481c1588ac3"
+    },
+    "source/server/athlete/analysis-request-boundary.test.ts": {
+      "bytes": 4933,
+      "sha256": "84733201b904182399cab8f265f6d577abc9fb360ce16ef3035264086e138e69"
+    },
+    "source/server/athlete/demo-access.test.ts": {
+      "bytes": 5674,
+      "sha256": "da838cc4bfaac707ad2b678bab1ae23ac9402cf1ce61351b52a0f788b2bdadc6"
+    },
+    "source/server/athlete/demoVideoFixture.test.ts": {
+      "bytes": 825,
+      "sha256": "4604a6fac317819e040bae519b0ed7aaec47af0982421235af7a6913579fd4df"
+    },
+    "source/server/athlete/demoVideoFixture.ts": {
+      "bytes": 6418,
+      "sha256": "ec539bbc48b9ba802f3bfd63c3094dbb0546a368d0b7e7e47865cfe484740fd7"
+    },
+    "source/server/athlete/index.ts": {
+      "bytes": 83939,
+      "sha256": "b1e66280aa103e2d86c80c7b96f0d2666f887c66374366410dc6979bcb9b35a8"
+    },
+    "source/server/athlete/media-request-boundary.test.ts": {
+      "bytes": 8543,
+      "sha256": "bc1da44ca41bd6629e3b375ebec6dc9e9040ca3f84a6bfc5b335cd7f4e86dbcd"
+    },
+    "source/server/athlete/notes-request-boundary.test.ts": {
+      "bytes": 6121,
+      "sha256": "dbf96d4a670655b14ae76eb143ad90c6634383ace1a84d04ff43e8de3938aede"
+    },
+    "source/server/athlete/policy.test.ts": {
+      "bytes": 1654,
+      "sha256": "e64f34282ede451ffe615642d21089e9282d880ac761a9f9f0cdfdaf1ae3e3b3"
+    },
+    "source/server/athlete/policy.ts": {
+      "bytes": 1795,
+      "sha256": "c38771000dcc02a66a03ab2af5bd7c7456a254a49ad2f6f58b04dbe6dbeb5253"
+    },
+    "source/server/athlete/pose-persistence.test.ts": {
+      "bytes": 4170,
+      "sha256": "7d30406784f4aab2d3f7dec66123d1302135755ef09a413aa9b2b770dfaf43e5"
+    },
+    "source/server/athlete/poseNormalization.test.ts": {
+      "bytes": 1582,
+      "sha256": "689f03253361d3d3f3325c1caa1b82d0885478d5eb37f32b89e10c0468b73ecf"
+    },
+    "source/server/athlete/poseNormalization.ts": {
+      "bytes": 1620,
+      "sha256": "7fbe2bcb4e1d56f634297c8b17cb8f249ef4b9566a0520e8fc54a206859dcd42"
+    },
+    "source/server/athlete/reports-request-boundary.test.ts": {
+      "bytes": 6348,
+      "sha256": "1c7a6dec20191042f541b05b256df969a95c0fb2d3d399a086e427cd83905dc7"
+    },
+    "source/server/athlete/request-boundary.test.ts": {
+      "bytes": 4269,
+      "sha256": "bfe60a1108b41d699b3fb8d33c586fb87c58d71876765a86dd47ce366ffc1ed2"
+    },
+    "source/server/athlete/route-test-support.ts": {
+      "bytes": 8831,
+      "sha256": "eba6ecb606ea47f09dbc1cb5f6d618f7423ec6b95f637e74f9d2f15bcb9976ea"
+    },
+    "source/server/athlete/seed.test.ts": {
+      "bytes": 1043,
+      "sha256": "706e966fa5eaa7783c318979553ed3f28659f76ad6064aeff7f2fb81420208ff"
+    },
+    "source/server/athlete/seed.ts": {
+      "bytes": 1336,
+      "sha256": "b84187dc363072db865b6bf5bd5d8cc360256e1a9a9b93504f3c623156fb54ef"
+    },
+    "source/server/athlete/serializers.test.ts": {
+      "bytes": 3184,
+      "sha256": "dbc91516b2fe0148ba45dc1dd79eca9c2db2d09511fe17e28973a6631369ed8b"
+    },
+    "source/server/athlete/serializers.ts": {
+      "bytes": 12276,
+      "sha256": "8f9593db398654f0f3ae2de88bbff5e9b77ad34777e6e7c9d0d08dbaa0995444"
+    },
+    "source/server/athlete/validation.test.ts": {
+      "bytes": 2978,
+      "sha256": "8061269dbf27b84e828c2798b554fa8189b13be50fe1dd34f4e5c40baa29fb13"
+    },
+    "source/server/athlete/validation.ts": {
+      "bytes": 14183,
+      "sha256": "39ca5bec7cdca46ddad46fcc6479dc496302b1c81a8fa821629d8e2110b31b31"
+    },
+    "source/server/athlete/verifiedReportExport.ts": {
+      "bytes": 8227,
+      "sha256": "2f6874c11a07cdcfa999569a543886ee2c2f3e4d67c88b80502869e3d303d0bc"
+    },
+    "source/server/athlete/video-metadata-request-boundary.test.ts": {
+      "bytes": 5042,
+      "sha256": "54648a1e331d5acb58a5a705f95edb9a39985c0edfcdf99a1562814fc5cf188c"
+    },
+    "source/server/auth.logout.test.ts": {
+      "bytes": 1625,
+      "sha256": "253f4a050743093300aa70fc0072f5fbd46cfba96ecfd1d52d434fbe7dcfb54a"
+    },
+    "source/server/db.ts": {
+      "bytes": 2328,
+      "sha256": "1aefa3e7e021f1935fb646dc2eb23bad9838fc688445044121df7ae0ce07936a"
+    },
+    "source/server/platform.test.ts": {
+      "bytes": 3620,
+      "sha256": "ef7de1314bf4cec4059a2530c9ed9dfc29e233a0cb71fe01c80fb19ac736a1dc"
+    },
+    "source/server/routers.ts": {
+      "bytes": 980,
+      "sha256": "9ba9b6c1b21ae6854e2c32c95e3718a0e7cfe472220382932bf9194adb5d7fc2"
+    },
+    "source/server/storage.ts": {
+      "bytes": 3104,
+      "sha256": "9b463c87c12c95d13281e8d27ed330470ce1be238a986e632b9ff644c9d31a1d"
+    },
+    "source/shared/INDICATORS.md": {
+      "bytes": 5767,
+      "sha256": "b4eb6c041beded603e4d6cd3835d24d893d6b786b3a57c9eff63f1677dba72d5"
+    },
+    "source/shared/_core/errors.ts": {
+      "bytes": 601,
+      "sha256": "52bee7d152045eaa009083e26a4cbc21d413c80b0403a23c4b5572141dec942a"
+    },
+    "source/shared/athlete.ts": {
+      "bytes": 4383,
+      "sha256": "6a313f06a0d03893769dcb0feb0a2a0eb61c4ac0a4bb42bac0b32c134bc27e50"
+    },
+    "source/shared/const.ts": {
+      "bytes": 1553,
+      "sha256": "551e9fdceccab8baeff81a29886871b7b870ed0d2095cfdf4d6718742b0e0479"
+    },
+    "source/shared/evaluation-types.ts": {
+      "bytes": 3656,
+      "sha256": "5a019a7af657457dcabf1ead316a3da34a2081c67f35c4cffed06fd12d3fac3e"
+    },
+    "source/shared/evaluation.test.ts": {
+      "bytes": 9387,
+      "sha256": "3704914e90b17dcaabe57f56c7af3d9b7ba4eae9ba1240058f17f45822a0d9f3"
+    },
+    "source/shared/evaluation.ts": {
+      "bytes": 21578,
+      "sha256": "4af343e6257123e4cc1d10abc87e06371097bbc797f4a4b479d8b2c3fd4f25ec"
+    },
+    "source/shared/pose.ts": {
+      "bytes": 1388,
+      "sha256": "65c6dfae08fada1df8d2a94b8ad5fe4d0bb68ee33bc9cf8ec77d2941a144514f"
+    },
+    "source/shared/poseMath.test.ts": {
+      "bytes": 2855,
+      "sha256": "cc170e122eb83e3d32a5a8fe00535f0a24ec11cac3c6e1365c54a75df01324d5"
+    },
+    "source/shared/poseMath.ts": {
+      "bytes": 6085,
+      "sha256": "cfe2dd23b1e39b1eca03bd787f5ac31c3aacd857c3e9ee034bfa48ec749a72b4"
+    },
+    "source/shared/poseTimeline.test.ts": {
+      "bytes": 1946,
+      "sha256": "ab127d02e7a767d04a26294b9e48adabeed68c709b659e6a9fff2027cba41cf4"
+    },
+    "source/shared/poseTimeline.ts": {
+      "bytes": 1781,
+      "sha256": "6ba1ffd7421fc49ac8ccd5aa80291a4c06fdf0ba3996f1359013ad26f599c35a"
+    },
+    "source/shared/types.ts": {
+      "bytes": 158,
+      "sha256": "959aeb30b032e203677e278922e97988b7cbcb56485694458298859af5589974"
+    },
+    "source/template.json": {
+      "bytes": 636,
+      "sha256": "12bbe98cce88cbf629a0a626be64329fc656c312039b8790f8c30b8e916c0002"
+    },
+    "source/tools/export-database.mjs": {
+      "bytes": 3243,
+      "sha256": "c3e39b57e7f0ca46bcd3f60c4fffcf61ad7631ef90f9a9f29b865bb08a537353"
+    },
+    "source/tsconfig.json": {
+      "bytes": 681,
+      "sha256": "d45d3c5a9d90eba9871d4221a3539ce36524f8e84094890389b2e690905bfa91"
+    },
+    "source/vite.config.ts": {
+      "bytes": 6511,
+      "sha256": "2ed4a4347e5d877d134ce4a56c9fc0eaf83e68d91331f25939faf33a9de8448c"
+    },
+    "source/vitest.config.ts": {
+      "bytes": 522,
+      "sha256": "ddd9bae8ef96c78a7778ae7d0d78ee5205f546c670695a03dd6ad6c88aaae1fc"
+    }
+  }
+}
