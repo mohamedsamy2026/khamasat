@@ -9,17 +9,7 @@ const fixture = vi.hoisted(() => ({
   organizationId: 11,
   db: null as any,
 }));
-vi.mock("../_core/sdk", () => ({
-  sdk: {
-    authenticateRequest: vi.fn(async () => ({
-      id: 7,
-      openId: "unit-test-only",
-      name: "هوية اختبار معزولة",
-      email: null,
-      role: "user",
-    })),
-  },
-}));
+vi.mock("../auth/middleware", () => ({ authenticateLocalRequest: vi.fn(async () => ({ id: 7, openId: "local:isolated-test-user", name: "Ù‡ÙˆÙŠØ© Ø§Ø®ØªØ¨Ø§Ø± Ù…Ø¹Ø²ÙˆÙ„Ø©", email: null, loginMethod: "local", role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() })) }));
 vi.mock("../db", () => ({ getDb: vi.fn(async () => fixture.db) }));
 import { registerAthleteRoutes } from "./index";
 

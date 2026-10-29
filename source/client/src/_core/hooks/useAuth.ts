@@ -1,93 +1,119 @@
-import { startLogin } from "@/const";
-import { trpc } from "@/lib/trpc";
-import { TRPCClientError } from "@trpc/client";
-import { useCallback, useEffect, useMemo } from "react";
 
+import { trpc } from "@/lib/trpc";
+import { useCallback, useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { clearDemoToken } from "@/lib/athleteApi";
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
   redirectPath?: string;
 };
 
-export function useAuth(options?: UseAuthOptions) {
-  // Login is started via startLogin() in the effect below, only when we actually
-  // navigate — never during render. startLogin() mints a one-time nonce + writes
-  // the state cookie, so calling it per render would overwrite the cookie and
-  // desync it from an in-flight login's `state`.
-  const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
-  const utils = trpc.useUtils();
+type AuthUser = {
+  id: number;
+  name: string | null;
+  email: string | null;
+  role: "user" | "admin";
+};
 
-  const meQuery = trpc.auth.me.useQuery(undefined, {
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      utils.auth.me.setData(undefined, null);
+async function fetchCurrentUser(): Promise<AuthUser | null> {
+  const response = await fetch("/api/auth/me", {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
     },
   });
 
-  const logout = useCallback(async () => {
-    try {
-      await logoutMutation.mutateAsync();
-    } catch (error: unknown) {
-      if (
-        error instanceof TRPCClientError &&
-        error.data?.code === "UNAUTHORIZED"
-      ) {
-        return;
-      }
-      throw error;
-    } finally {
-      // Clear the Preview auto-login token mirrored into sessionStorage, so
-      // header-based sessions (Safari ITP / WebView) are logged out too. The
-      // backend cookie is cleared by the logout mutation.
-      try {
-        sessionStorage.removeItem("manus-cookie");
-      } catch {}
-      utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
-    }
-  }, [logoutMutation, utils]);
+  if (response.status === 401) {
+    return null;
+  }
 
-  const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
-    return {
+  if (!response.ok) {
+    throw new Error(`Authentication request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  return data.user ?? null;
+}
+
+export function useAuth(options?: UseAuthOptions) {
+  const {
+    redirectOnUnauthenticated = false,
+    redirectPath = "/login",
+  } = options ?? {};
+
+  const queryClient = useQueryClient();
+  const utils = trpc.useUtils();
+
+  const meQuery = useQuery({
+    queryKey: ["local-auth", "me"],
+    queryFn: fetchCurrentUser,
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
+  });
+
+
+const logout = useCallback(async () => {
+  const response = await fetch("/api/auth/logout", {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Logout failed: ${response.status}`);
+  }
+
+  // Clear the previous user's session and private cached data.
+  queryClient.setQueryData(["local-auth", "me"], null);
+  utils.auth.me.setData(undefined, null);
+
+  queryClient.removeQueries({
+    queryKey: ["athlete"],
+  });
+
+  queryClient.removeQueries({
+    queryKey: ["athlete-session"],
+  });
+
+  clearDemoToken();
+
+  try {
+    localStorage.removeItem("athlete-organization");
+  } catch {
+    // Storage may be unavailable.
+  }
+
+  // Reload to reset in-memory organization and session state.
+  window.location.replace("/");
+}, [queryClient, utils]);
+
+
+  const state = useMemo(
+    () => ({
       user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
-      error: meQuery.error ?? logoutMutation.error ?? null,
+      loading: meQuery.isPending,
+      error: meQuery.error ?? null,
       isAuthenticated: Boolean(meQuery.data),
-    };
-  }, [
-    meQuery.data,
-    meQuery.error,
-    meQuery.isLoading,
-    logoutMutation.error,
-    logoutMutation.isPending,
-  ]);
+    }),
+    [meQuery.data, meQuery.isPending, meQuery.error]
+  );
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
-    if (meQuery.isLoading || logoutMutation.isPending) return;
-    if (state.user) return;
-    if (typeof window === "undefined") return;
-    if (redirectPath && window.location.pathname === redirectPath) return;
+    if (meQuery.isPending || meQuery.isError) return;
+    if (state.isAuthenticated) return;
 
-    // Navigate at this moment only. startLogin() mints the nonce + cookie itself.
-    if (redirectPath) {
-      window.location.href = redirectPath;
-    } else {
-      startLogin();
-    }
+    if (window.location.pathname === redirectPath) return;
+
+    window.location.assign(redirectPath);
   }, [
     redirectOnUnauthenticated,
     redirectPath,
-    logoutMutation.isPending,
-    meQuery.isLoading,
-    state.user,
+    meQuery.isPending,
+    meQuery.isError,
+    state.isAuthenticated,
   ]);
 
   return {

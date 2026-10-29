@@ -14,17 +14,7 @@ import {
 
 // Isolated route fixture: no SDK credential, token, or managed database is used.
 const fixtureState = vi.hoisted(() => ({ db: null as any }));
-vi.mock("../_core/sdk", () => ({
-  sdk: {
-    authenticateRequest: vi.fn(async () => ({
-      id: 7,
-      openId: "pose-persistence-test-only",
-      name: "هوية اختبار معزولة",
-      email: null,
-      role: "user",
-    })),
-  },
-}));
+vi.mock("../auth/middleware", () => ({ authenticateLocalRequest: vi.fn(async () => ({ id: 7, openId: "local:isolated-test-user", name: "Ù‡ÙˆÙŠØ© Ø§Ø®ØªØ¨Ø§Ø± Ù…Ø¹Ø²ÙˆÙ„Ø©", email: null, loginMethod: "local", role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() })) }));
 vi.mock("../db", () => ({ getDb: vi.fn(async () => fixtureState.db) }));
 import { registerAthleteRoutes } from "./index";
 

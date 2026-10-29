@@ -1,67 +1,94 @@
+
 import { trpc } from "@/lib/trpc";
-import { COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
+
 import App from "./App";
 import { startLogin } from "./const";
 import "./index.css";
 
 const queryClient = new QueryClient();
 
-const redirectToLoginIfUnauthorized = (error: unknown) => {
+/**
+ * Redirect unauthorized users to the local login page.
+ *
+ * Authentication now relies on the application's own
+ * HTTP-only session cookie instead of Manus OAuth.
+ */
+function redirectToLoginIfUnauthorized(error: unknown): void {
   if (!(error instanceof TRPCClientError)) return;
+
   if (typeof window === "undefined") return;
 
-  const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
+  const errorCode = (
+    error.data as { code?: string } | undefined
+  )?.code;
 
-  if (!isUnauthorized) return;
+  if (errorCode !== "UNAUTHORIZED") return;
+
+  // Avoid redirecting repeatedly while already on auth pages.
+  if (
+    window.location.pathname === "/login" ||
+    window.location.pathname === "/register"
+  ) {
+    return;
+  }
 
   startLogin();
-};
+}
 
+/**
+ * Handle API query errors.
+ */
 queryClient.getQueryCache().subscribe(event => {
-  if (event.type === "updated" && event.action.type === "error") {
-    const error = event.query.state.error;
-    redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
+  if (
+    event.type !== "updated" ||
+    event.action.type !== "error"
+  ) {
+    return;
   }
+
+  const error = event.query.state.error;
+
+  redirectToLoginIfUnauthorized(error);
+
+  console.error("[API Query Error]", error);
 });
 
+/**
+ * Handle API mutation errors.
+ */
 queryClient.getMutationCache().subscribe(event => {
-  if (event.type === "updated" && event.action.type === "error") {
-    const error = event.mutation.state.error;
-    redirectToLoginIfUnauthorized(error);
-    console.error("[API Mutation Error]", error);
+  if (
+    event.type !== "updated" ||
+    event.action.type !== "error"
+  ) {
+    return;
   }
+
+  const error = event.mutation.state.error;
+
+  redirectToLoginIfUnauthorized(error);
+
+  console.error("[API Mutation Error]", error);
 });
 
+/**
+ * Create the tRPC client.
+ *
+ * Browser cookies are sent automatically to the same-origin
+ * backend. No session tokens are stored in localStorage
+ * or sessionStorage.
+ */
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: "/api/trpc",
+
       transformer: superjson,
-      headers() {
-        // Preview auto-login fallback: when the browser blocks iframe cookies
-        // (Safari ITP / private browsing / WebView), the runtime mirrors the
-        // session into sessionStorage so we can forward it as a Bearer token.
-        // The regular OAuth cookie flow keeps working and takes priority server-side.
-        try {
-          const raw = sessionStorage.getItem("manus-cookie");
-          if (raw) {
-            const prefix = `${COOKIE_NAME}=`;
-            const pair = raw.split(";").find(s => s.trim().startsWith(prefix));
-            const token = pair?.trim().slice(prefix.length);
-            if (token) {
-              return { Authorization: `Bearer ${token}` };
-            }
-          }
-        } catch {
-          // sessionStorage unavailable
-        }
-        return {};
-      },
+
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
@@ -72,8 +99,20 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-createRoot(document.getElementById("root")!).render(
-  <trpc.Provider client={trpcClient} queryClient={queryClient}>
+/**
+ * Application root.
+ */
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element was not found");
+}
+
+createRoot(rootElement).render(
+  <trpc.Provider
+    client={trpcClient}
+    queryClient={queryClient}
+  >
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>

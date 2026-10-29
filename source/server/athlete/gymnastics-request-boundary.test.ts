@@ -11,17 +11,7 @@ import {
 
 // Isolated request fixture only: no JWT, cookies, users, or database connections.
 const fixtureState = vi.hoisted(() => ({ db: null as any }));
-vi.mock("../_core/sdk", () => ({
-  sdk: {
-    authenticateRequest: vi.fn(async () => ({
-      id: 7,
-      openId: "gymnastics-route-isolated-fixture",
-      name: "مدرب جمباز معزول",
-      email: null,
-      role: "user",
-    })),
-  },
-}));
+vi.mock("../auth/middleware", () => ({ authenticateLocalRequest: vi.fn(async () => ({ id: 7, openId: "local:isolated-test-user", name: "مدرب جمباز معزول", email: null, loginMethod: "local", role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() })) }));
 vi.mock("../db", () => ({ getDb: vi.fn(async () => fixtureState.db) }));
 
 import { registerAthleteRoutes } from "./index";

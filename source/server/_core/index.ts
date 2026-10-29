@@ -3,13 +3,12 @@ import express from "express";
 import { createServer } from "http";
 import path from "node:path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
 import { publicPlatformScript } from "./publicConfig";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerAthleteRoutes } from "../athlete";
-
+import { registerAuthRoutes } from "../auth/routes";
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -29,10 +28,12 @@ async function startServer() {
       fallthrough: false,
     })
   );
+
   // Registers the route-local raw video parser before generic JSON parsing.
   registerAthleteRoutes(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
+  registerAuthRoutes(app);
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.get("/api/platform/config.js", (_req, res) => {
@@ -41,7 +42,6 @@ async function startServer() {
       .type("application/javascript")
       .send(publicPlatformScript());
   });
-  registerOAuthRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

@@ -1,0 +1,154 @@
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 40px 20px;
+  direction: rtl;
+  background:
+    radial-gradient(
+      circle at 85% 15%,
+      #ddf6e8 0,
+      transparent 36%
+    ),
+    #f5f8f6;
+  color: #173b2c;
+  font-family: inherit;
+}
+
+.auth-card {
+  width: min(100%, 450px);
+  background: #ffffff;
+  border: 1px solid #e3eae5;
+  border-radius: 22px;
+  padding: 36px;
+  box-shadow: 0 18px 55px rgba(16, 55, 36, 0.07);
+}
+
+.auth-brand {
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  color: #136f47;
+  font-size: 19px;
+  text-decoration: none;
+}
+
+.auth-card h1 {
+  font-size: 30px;
+  line-height: 1.35;
+  margin: 25px 0 8px;
+  color: #173b2c;
+}
+
+.auth-description {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #687970;
+  margin-bottom: 26px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 17px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth-field input {
+  width: 100%;
+  height: 47px;
+  padding: 0 13px;
+  border: 1px solid #d4e1d9;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 400;
+  color: #163626;
+  background: #fff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.auth-field input:focus {
+  border-color: #188454;
+  box-shadow: 0 0 0 3px rgba(24, 132, 84, 0.12);
+}
+
+.auth-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #77877d;
+}
+
+.auth-error {
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #fff1f0;
+  color: #a12d2b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.auth-submit {
+  height: 48px;
+  background: #116b45;
+  color: white;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: #0d5838;
+}
+
+.auth-submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.auth-footer {
+  margin: 22px 0 0;
+  color: #63786a;
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-footer a,
+.auth-back {
+  color: #126d47;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.auth-footer a:hover,
+.auth-back:hover {
+  text-decoration: underline;
+}
+
+.auth-back {
+  display: inline-block;
+  margin-top: 23px;
+  font-size: 13px;
+}
+
+@media (max-width: 500px) {
+  .auth-page {
+    padding: 20px 15px;
+  }
+
+  .auth-card {
+    padding: 27px 22px;
+  }
+
+  .auth-card h1 {
+    font-size: 26px;
+  }
+}

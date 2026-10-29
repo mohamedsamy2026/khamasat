@@ -706,18 +706,21 @@ export function Settings() {
     }
   }
 
-  async function confirmLogout() {
-    setLogoutError("");
-    try {
-      await logout();
-      await invalidate();
-      setLocation("/");
-    } catch (cause) {
-      setLogoutError(
-        cause instanceof Error ? cause.message : "تعذر تسجيل الخروج."
-      );
-    }
+
+async function confirmLogout() {
+  setLogoutError("");
+
+  try {
+    await logout();
+  } catch (cause) {
+    setLogoutError(
+      cause instanceof Error
+        ? cause.message
+        : "تعذر تسجيل الخروج."
+    );
   }
+}
+
 
   function loginForRealData() {
     try {

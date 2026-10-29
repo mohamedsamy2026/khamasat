@@ -577,6 +577,60 @@ export const playerPhysicalAssessments = mysqlTable(
   ]
 );
 
+import * as authSql from "drizzle-orm/mysql-core";
+
+export const authCredentials = authSql.mysqlTable(
+  "auth_credentials",
+  {
+    id: authSql.int("id").primaryKey().autoincrement(),
+
+    userId: authSql
+      .int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    email: authSql.varchar("email", { length: 255 }).notNull(),
+
+    passwordHash: authSql
+      .varchar("password_hash", { length: 255 })
+      .notNull(),
+
+    createdAt: authSql.timestamp("created_at").defaultNow().notNull(),
+    updatedAt: authSql.timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    authSql.uniqueIndex("auth_credentials_user_id_unique").on(table.userId),
+    authSql.uniqueIndex("auth_credentials_email_unique").on(table.email),
+  ]
+);
+
+export const authSessions = authSql.mysqlTable(
+  "auth_sessions",
+  {
+    id: authSql.int("id").primaryKey().autoincrement(),
+
+    userId: authSql
+      .int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    tokenHash: authSql
+      .varchar("token_hash", { length: 64 })
+      .notNull(),
+
+    expiresAt: authSql.timestamp("expires_at").notNull(),
+
+    revokedAt: authSql.timestamp("revoked_at"),
+
+    createdAt: authSql.timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    authSql.uniqueIndex("auth_sessions_token_hash_unique").on(table.tokenHash),
+    authSql.index("auth_sessions_user_id_idx").on(table.userId),
+    authSql.index("auth_sessions_expires_at_idx").on(table.expiresAt),
+  ]
+);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Organization = typeof organizations.$inferSelect;

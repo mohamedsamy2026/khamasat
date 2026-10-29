@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { COOKIE_NAME } from "@shared/const";
 import type { Membership, Session } from "@shared/athlete";
 
 const DEMO_TOKEN_KEY = "athlete-demo-token";
@@ -82,19 +81,6 @@ export function clearDemoToken() {
   }
 }
 
-function tokenHeaders(): Record<string, string> {
-  try {
-    const pair = sessionStorage
-      .getItem("manus-cookie")
-      ?.split(";")
-      .find(p => p.trim().startsWith(`${COOKIE_NAME}=`));
-    const token = pair?.trim().slice(COOKIE_NAME.length + 1);
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  } catch {
-    return {};
-  }
-}
-
 function requestHeaders(options: HeadersInit = {}) {
   const headers = new Headers(options);
   const org = currentOrganization();
@@ -103,9 +89,6 @@ function requestHeaders(options: HeadersInit = {}) {
     headers.set("X-Organization-Id", org);
   if (demoToken && !headers.has("X-Demo-Token"))
     headers.set("X-Demo-Token", demoToken);
-  for (const [key, value] of Object.entries(tokenHeaders())) {
-    if (!headers.has(key)) headers.set(key, value);
-  }
   return headers;
 }
 
@@ -317,6 +300,7 @@ export function AthleteProvider({ children }: { children: ReactNode }) {
     demoBootstrapStarted.current = false;
     setBootstrapError(null);
     await Promise.all([
+      client.invalidateQueries({ queryKey: ["local-auth", "me"] }),
       client.invalidateQueries({ queryKey: ["athlete"] }),
       client.invalidateQueries({ queryKey: ["athlete-session"] }),
     ]);

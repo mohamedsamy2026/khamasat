@@ -1,6 +1,8 @@
+
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
+import { AUTH_COOKIE_NAME } from "./auth/session";
 import type { TrpcContext } from "./_core/context";
 
 type CookieCall = {
@@ -10,7 +12,10 @@ type CookieCall = {
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] } {
+function createAuthContext(): {
+  ctx: TrpcContext;
+  clearedCookies: CookieCall[];
+} {
   const clearedCookies: CookieCall[] = [];
 
   const user: AuthenticatedUser = {
@@ -18,7 +23,7 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
     openId: "sample-user",
     email: "sample@example.com",
     name: "Sample User",
-    loginMethod: "manus",
+    loginMethod: "local",
     role: "user",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -42,21 +47,37 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
 }
 
 describe("auth.logout", () => {
-  it("clears the session cookie and reports success", async () => {
+  it("clears both local and legacy session cookies", async () => {
     const { ctx, clearedCookies } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
     const result = await caller.auth.logout();
 
     expect(result).toEqual({ success: true });
-    expect(clearedCookies).toHaveLength(1);
-    expect(clearedCookies[0]?.name).toBe(COOKIE_NAME);
-    expect(clearedCookies[0]?.options).toMatchObject({
-      maxAge: -1,
-      secure: true,
-      sameSite: "none",
+
+    expect(clearedCookies).toHaveLength(2);
+
+    const localCookie = clearedCookies.find(
+      (cookie) => cookie.name === AUTH_COOKIE_NAME
+    );
+
+    const legacyCookie = clearedCookies.find(
+      (cookie) => cookie.name === COOKIE_NAME
+    );
+
+    expect(localCookie).toBeDefined();
+    expect(localCookie?.options).toMatchObject({
       httpOnly: true,
+      sameSite: "strict",
       path: "/",
     });
+
+    expect(legacyCookie).toBeDefined();
+   expect(legacyCookie?.options).toMatchObject({
+  secure: true,
+  sameSite: "none",
+  httpOnly: true,
+  path: "/",
+});
   });
 });

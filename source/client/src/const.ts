@@ -1,32 +1,38 @@
-import { OAUTH_STATE_COOKIE, encodeOAuthState } from "@shared/const";
 
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
-// Start the Manus OAuth login. Call this from an event handler or effect at the
-// moment you want to navigate, e.g. `onClick={() => startLogin()}`.
-//
-// It has SIDE EFFECTS — it mints a one-time nonce, writes the __Host- state
-// cookie, and navigates immediately — so the cookie nonce always matches the
-// `state` it sends. Do NOT call it during render (no `href={startLogin()}` /
-// `loginUrl={...}`): each call overwrites the cookie, so a stray render-phase
-// call would desync it from an in-flight login and the callback would reject it
-// with "invalid oauth state". It returns void by design, so there is no URL to
-// stash across renders.
-export const startLogin = () => {
-  const oauthPortalUrl = window.__MANUS_CONFIG__?.oauthPortalUrl;
-  const appId = window.__MANUS_CONFIG__?.projectId;
-  if (!oauthPortalUrl || !appId) throw new Error("Manus login is not configured");
-  const redirectUri = `${window.location.origin}/api/oauth/callback`;
+/**
+ * Redirect the user to the local login page.
+ *
+ * This replaces the previous Manus OAuth flow while preserving
+ * the startLogin() API used throughout the frontend.
+ */
+export const startLogin = (): void => {
+  if (typeof window === "undefined") return;
 
-  const nonce = crypto.randomUUID();
-  document.cookie = `${OAUTH_STATE_COOKIE}=${nonce}; Path=/; Max-Age=600; SameSite=None; Secure`;
-  const state = encodeOAuthState({ redirectUri, nonce });
+  const currentPath =
+    window.location.pathname +
+    window.location.search +
+    window.location.hash;
 
-  const url = new URL(`${oauthPortalUrl}/app-auth`);
-  url.searchParams.set("appId", appId);
-  url.searchParams.set("redirectUri", redirectUri);
-  url.searchParams.set("state", state);
-  url.searchParams.set("responseType", "code");
+  // Prevent redirect loops.
+  if (
+    window.location.pathname === "/login" ||
+    window.location.pathname === "/register"
+  ) {
+    return;
+  }
 
-  window.location.href = url.toString();
+  const params = new URLSearchParams();
+
+  // Return the user to the page they originally requested.
+  if (currentPath !== "/") {
+    params.set("redirect", currentPath);
+  }
+
+  const query = params.toString();
+
+  window.location.assign(
+    query ? `/login?${query}` : "/login"
+  );
 };

@@ -43,6 +43,13 @@
       "when": 1793103332953,
       "tag": "0005_calm_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1793210054251,
+      "tag": "0006_independent_auth",
+      "breakpoints": true
     }
   ]
 }

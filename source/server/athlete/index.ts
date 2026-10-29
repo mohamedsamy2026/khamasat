@@ -70,7 +70,9 @@ import {
   NotFoundError,
 } from "../../shared/_core/errors";
 import { getDb } from "../db";
-import { type AuthenticatedUser } from "../_core/sdk";
+type OrganizationOwner = {
+  id: number;
+};
 import {
   actorDisplayName,
   actorUserId,
@@ -1056,8 +1058,9 @@ function legacyReportCsvArchive(report: Report): string {
 const reportHtml = exportVerifiedReportHtml;
 const reportCsv = exportVerifiedReportCsv;
 
+
 async function createOrganizationForUser(
-  user: AuthenticatedUser,
+  user: OrganizationOwner,
   input: {
     name: string;
     type: "academy" | "club";
@@ -1067,8 +1070,13 @@ async function createOrganizationForUser(
   demo: boolean = false
 ): Promise<Membership> {
   const db = await database();
+
   const sports = (input.sports ?? ["football"]).filter(isSportId);
-  if (!sports.length) throw BadRequestError("اختر رياضة واحدة على الأقل");
+
+  if (!sports.length) {
+    throw BadRequestError("اختر رياضة واحدة على الأقل");
+  }
+
   const result = await db.transaction(async tx => {
     const orgResult = await tx.insert(organizations).values({
       name: input.name,
@@ -1078,17 +1086,25 @@ async function createOrganizationForUser(
       isDemo: demo,
       demoOwnerUserId: demo ? user.id : null,
     });
+
     const organizationId = insertId(orgResult);
-    await tx
-      .insert(memberships)
-      .values({ organizationId, userId: user.id, role: "owner" });
+
+    await tx.insert(memberships).values({
+      organizationId,
+      userId: user.id,
+      role: "owner",
+    });
+
     await writeAudit(tx, {
       organizationId,
       actorUserId: user.id,
       entityType: "organization",
       entityId: organizationId,
-      action: demo ? "organization.demo_created" : "organization.created",
+      action: demo
+        ? "organization.demo_created"
+        : "organization.created",
     });
+
     return {
       organizationId,
       name: input.name,
@@ -1099,8 +1115,10 @@ async function createOrganizationForUser(
       sports,
     };
   });
+
   return asMembership(result);
 }
+
 
 /** Adds only the unmeasured demo record and leaves every existing player intact. */
 async function seedTruthfulDemoPlayers(
@@ -1149,7 +1167,7 @@ async function seedTruthfulDemoPlayers(
   return inserted;
 }
 
-async function ensureDemoSetup(user: AuthenticatedUser): Promise<void> {
+async function ensureDemoSetup(user: OrganizationOwner): Promise<void> {
   const db = await database();
   await db.transaction(async tx => {
     const ensure = async (
