@@ -50,6 +50,13 @@
       "when": 1793210054251,
       "tag": "0006_independent_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1793290686940,
+      "tag": "0007_natural_meltdown",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,7 @@ const journal = JSON.parse(
 
 const sportHealthMigration = "0005_calm_hardball.sql";
 const authMigration = "0006_independent_auth.sql";
+const regulatoryMigration = "0007_natural_meltdown.sql";
 
 const sql = readFileSync(
   join(drizzleDir, sportHealthMigration),
@@ -25,6 +26,11 @@ const sql = readFileSync(
 
 const authSql = readFileSync(
   join(drizzleDir, authMigration),
+  "utf8"
+);
+
+const regulatorySql = readFileSync(
+  join(drizzleDir, regulatoryMigration),
   "utf8"
 );
 
@@ -44,13 +50,15 @@ describe("sport and health migration safety", () => {
 
     expect(migrationFiles).toContain(sportHealthMigration);
 
-    expect(journal.entries.some(
-      (entry) => entry.tag === "0005_calm_hardball"
-    )).toBe(true);
+    expect(
+      journal.entries.some(
+        (entry) => entry.tag === "0005_calm_hardball"
+      )
+    ).toBe(true);
 
-    expect(journal.entries.map((entry) => entry.idx)).toEqual(
-      [...journal.entries.keys()]
-    );
+    expect(
+      journal.entries.map((entry) => entry.idx)
+    ).toEqual([...journal.entries.keys()]);
   });
 
   it("never drops, truncates or deletes existing records", () => {
@@ -123,9 +131,29 @@ describe("independent authentication migration safety", () => {
   it("adds the authentication migration after the existing history", () => {
     expect(migrationFiles).toContain(authMigration);
 
-    expect(journal.entries.at(-1)?.tag).toBe(
+    const migrationTags = journal.entries.map(
+      (entry) => entry.tag
+    );
+
+    const sportMigrationIndex = migrationTags.indexOf(
+      "0005_calm_hardball"
+    );
+
+    const authMigrationIndex = migrationTags.indexOf(
       "0006_independent_auth"
     );
+
+    const regulatoryMigrationIndex = migrationTags.indexOf(
+      "0007_natural_meltdown"
+    );
+
+    expect(sportMigrationIndex).toBeGreaterThanOrEqual(0);
+    expect(authMigrationIndex).toBeGreaterThan(sportMigrationIndex);
+    expect(regulatoryMigrationIndex).toBeGreaterThan(
+      authMigrationIndex
+    );
+
+    expect(migrationFiles).toContain(regulatoryMigration);
   });
 
   it("creates credentials and sessions tables", () => {
@@ -156,13 +184,72 @@ describe("independent authentication migration safety", () => {
     expectNoDestructiveStatements(authSql);
   });
 
- it("only permits the documented organizations column adjustment", () => {
-  const changes = authSql.match(
-    /ALTER\s+TABLE\s+`(?:organizations|players|notes|memberships)`[^;]*;/gi
-  ) ?? [];
+  it("only permits the documented organizations column adjustment", () => {
+    const changes =
+      authSql.match(
+        /ALTER\s+TABLE\s+`(?:organizations|players|notes|memberships)`[^;]*;/gi
+      ) ?? [];
 
-  expect(changes).toEqual([
-    "ALTER TABLE `organizations` MODIFY COLUMN `sports` json NOT NULL;",
-  ]);
+    expect(changes).toEqual([
+      "ALTER TABLE `organizations` MODIFY COLUMN `sports` json NOT NULL;",
+    ]);
+  });
 });
+
+describe("regulatory authority migration safety", () => {
+  it("creates all eight regulatory tables", () => {
+    const tables = [
+      "regulatory_authorities",
+      "authority_memberships",
+      "academy_authority_links",
+      "coaches",
+      "academy_licenses",
+      "coach_licenses",
+      "regulatory_reports",
+      "license_notifications",
+    ];
+
+    for (const table of tables) {
+      expect(regulatorySql).toContain(
+        `CREATE TABLE \`${table}\``
+      );
+    }
+  });
+
+  it("does not delete or modify existing application data", () => {
+    expectNoDestructiveStatements(regulatorySql);
+
+    const legacyTableChanges =
+      regulatorySql.match(
+        /ALTER\s+TABLE\s+`(?:users|organizations|players|memberships|analyses|videos|notes)`\s/gi
+      ) ?? [];
+
+    expect(legacyTableChanges).toEqual([]);
+  });
+
+  it("preserves regulatory relationships and report records", () => {
+    expect(regulatorySql).toContain(
+      "CONSTRAINT `academy_authority_unique` UNIQUE(`academyId`,`authorityId`)"
+    );
+
+    expect(regulatorySql).toContain(
+      "CONSTRAINT `authority_memberships_unique` UNIQUE(`authorityId`,`userId`)"
+    );
+
+    expect(regulatorySql).toContain(
+      "CONSTRAINT `academy_license_number_unique` UNIQUE(`authorityId`,`licenseNumber`)"
+    );
+
+    expect(regulatorySql).toContain(
+      "CONSTRAINT `coach_license_number_unique` UNIQUE(`authorityId`,`licenseNumber`)"
+    );
+
+    expect(regulatorySql).toContain(
+      "`content` json NOT NULL"
+    );
+
+    expect(regulatorySql).toContain(
+      "REFERENCES `regulatory_authorities`(`id`)"
+    );
+  });
 });

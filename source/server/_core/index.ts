@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerAthleteRoutes } from "../athlete";
 import { registerAuthRoutes } from "../auth/routes";
+import { registerRegulatoryRoutes } from "../regulatory";
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -31,6 +32,16 @@ async function startServer() {
 
   // Registers the route-local raw video parser before generic JSON parsing.
   registerAthleteRoutes(app);
+  app.use(express.json({ limit: "50mb" }));
+
+registerAuthRoutes(app);
+
+registerRegulatoryRoutes(app);
+
+app.use(express.urlencoded({
+  limit: "50mb",
+  extended: true,
+}));
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   registerAuthRoutes(app);

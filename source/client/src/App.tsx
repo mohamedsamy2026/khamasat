@@ -28,6 +28,9 @@ import {
 } from "./pages/SupportPages";
 import NotFound from "./pages/NotFound";
 
+// Ministry dashboard
+import MinistryDashboard from "./pages/MinistryDashboard";
+
 function Router() {
   const [location] = useLocation();
 
@@ -49,6 +52,12 @@ function Router() {
       {/* Local authentication */}
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+
+      {/* Ministry dashboard */}
+      <Route
+        path="/ministry"
+        component={MinistryDashboard}
+      />
 
       {/* Academy dashboard */}
       <Route path="/academies">

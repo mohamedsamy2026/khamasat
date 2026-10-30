@@ -120,6 +120,153 @@ export const memberships = mysqlTable(
   ]
 );
 
+
+/**
+ * Independent regulatory authorities such as a ministry
+ * or an authorized regional sports administration.
+ */
+export const regulatoryAuthorities = mysqlTable(
+  "regulatory_authorities",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    name: varchar("name", { length: 180 }).notNull(),
+
+    code: varchar("code", { length: 40 })
+      .notNull()
+      .unique(),
+
+    region: varchar("region", { length: 120 }).notNull(),
+
+    status: mysqlEnum("status", [
+      "active",
+      "suspended",
+    ])
+      .notNull()
+      .default("active"),
+
+    createdAt: timestamp("createdAt")
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updatedAt")
+      .defaultNow()
+      .onUpdateNow()
+      .notNull(),
+  },
+  table => [
+    index("regulatory_authorities_region_idx").on(
+      table.region
+    ),
+  ]
+);
+
+/**
+ * Users authorized to manage a regulatory authority.
+ * An application admin is not automatically a ministry employee.
+ */
+export const authorityMemberships = mysqlTable(
+  "authority_memberships",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    authorityId: int("authorityId")
+      .notNull()
+      .references(() => regulatoryAuthorities.id, {
+        onDelete: "cascade",
+      }),
+
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
+
+    role: mysqlEnum("role", [
+      "admin",
+      "reviewer",
+      "viewer",
+    ]).notNull(),
+
+    createdAt: timestamp("createdAt")
+      .defaultNow()
+      .notNull(),
+  },
+  table => [
+    unique("authority_memberships_unique").on(
+      table.authorityId,
+      table.userId
+    ),
+
+    index("authority_memberships_user_idx").on(
+      table.userId
+    ),
+  ]
+);
+
+/**
+ * Links an academy to a regulatory authority.
+ *
+ * Pending links grant no regulatory access.
+ * Only approved links may be used for authorized
+ * regulatory operations.
+ */
+export const academyAuthorityLinks = mysqlTable(
+  "academy_authority_links",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    academyId: int("academyId")
+      .notNull()
+      .references(() => organizations.id, {
+        onDelete: "cascade",
+      }),
+
+    authorityId: int("authorityId")
+      .notNull()
+      .references(() => regulatoryAuthorities.id, {
+        onDelete: "cascade",
+      }),
+
+    status: mysqlEnum("status", [
+      "pending",
+      "approved",
+      "rejected",
+      "revoked",
+    ])
+      .notNull()
+      .default("pending"),
+
+    approvedByUserId: int("approvedByUserId")
+      .references(() => users.id, {
+        onDelete: "set null",
+      }),
+
+    approvedAt: timestamp("approvedAt"),
+
+    createdAt: timestamp("createdAt")
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updatedAt")
+      .defaultNow()
+      .onUpdateNow()
+      .notNull(),
+  },
+  table => [
+    unique("academy_authority_unique").on(
+      table.academyId,
+      table.authorityId
+    ),
+
+    index("academy_authority_status_idx").on(
+      table.authorityId,
+      table.status
+    ),
+  ]
+);
+
+
 export const players = mysqlTable(
   "players",
   {
@@ -630,6 +777,288 @@ export const authSessions = authSql.mysqlTable(
     authSql.index("auth_sessions_expires_at_idx").on(table.expiresAt),
   ]
 );
+
+
+export const coaches = mysqlTable(
+  "coaches",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    academyId: int("academyId")
+      .notNull()
+      .references(() => organizations.id, {
+        onDelete: "cascade",
+      }),
+
+    name: varchar("name", { length: 160 }).notNull(),
+
+    email: varchar("email", { length: 320 }),
+
+    phone: varchar("phone", { length: 30 }),
+
+    specialization: varchar("specialization", {
+      length: 120,
+    }).notNull().default(""),
+
+    status: mysqlEnum("status", [
+      "active",
+      "inactive",
+    ]).notNull().default("active"),
+
+    createdAt: timestamp("createdAt")
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updatedAt")
+      .defaultNow()
+      .onUpdateNow()
+      .notNull(),
+  },
+  table => [
+    index("coaches_academy_idx").on(table.academyId),
+  ]
+);
+
+
+export const academyLicenses = mysqlTable(
+  "academy_licenses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    academyId: int("academyId")
+      .notNull()
+      .references(() => organizations.id, {
+        onDelete: "cascade",
+      }),
+
+    authorityId: int("authorityId")
+      .notNull()
+      .references(() => regulatoryAuthorities.id),
+
+    licenseNumber: varchar("licenseNumber", {
+      length: 100,
+    }).notNull(),
+
+    issuedAt: timestamp("issuedAt").notNull(),
+
+    expiresAt: timestamp("expiresAt").notNull(),
+
+    status: mysqlEnum("status", [
+      "active",
+      "suspended",
+      "revoked",
+    ]).notNull().default("active"),
+
+    createdAt: timestamp("createdAt")
+      .defaultNow()
+      .notNull(),
+  },
+  table => [
+    unique("academy_license_number_unique").on(
+      table.authorityId,
+      table.licenseNumber
+    ),
+
+    index("academy_licenses_expiry_idx").on(
+      table.expiresAt
+    ),
+
+    index("academy_licenses_academy_idx").on(
+      table.academyId
+    ),
+  ]
+);
+
+
+
+export const coachLicenses = mysqlTable(
+  "coach_licenses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    coachId: int("coachId")
+      .notNull()
+      .references(() => coaches.id, {
+        onDelete: "cascade",
+      }),
+
+    authorityId: int("authorityId")
+      .notNull()
+      .references(() => regulatoryAuthorities.id),
+
+    licenseNumber: varchar("licenseNumber", {
+      length: 100,
+    }).notNull(),
+
+    issuedAt: timestamp("issuedAt").notNull(),
+
+    expiresAt: timestamp("expiresAt").notNull(),
+
+    status: mysqlEnum("status", [
+      "active",
+      "suspended",
+      "revoked",
+    ]).notNull().default("active"),
+
+    createdAt: timestamp("createdAt")
+      .defaultNow()
+      .notNull(),
+  },
+  table => [
+    unique("coach_license_number_unique").on(
+      table.authorityId,
+      table.licenseNumber
+    ),
+
+    index("coach_licenses_coach_idx").on(
+      table.coachId
+    ),
+
+    index("coach_licenses_expiry_idx").on(
+      table.expiresAt
+    ),
+  ]
+);
+
+
+export const regulatoryReports = mysqlTable(
+  "regulatory_reports",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    academyId: int("academyId")
+      .notNull()
+      .references(() => organizations.id),
+
+    authorityId: int("authorityId")
+      .notNull()
+      .references(() => regulatoryAuthorities.id),
+
+    title: varchar("title", {
+      length: 220,
+    }).notNull(),
+
+    reportType: mysqlEnum("reportType", [
+      "performance",
+      "compliance",
+      "annual",
+      "other",
+    ]).notNull(),
+
+    // Immutable snapshot of the submitted report.
+    content: json("content")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+
+    status: mysqlEnum("status", [
+      "submitted",
+      "under_review",
+      "reviewed",
+      "returned",
+    ]).notNull().default("submitted"),
+
+    submittedByUserId: int("submittedByUserId")
+      .references(() => users.id, {
+        onDelete: "set null",
+      }),
+
+    reviewedByUserId: int("reviewedByUserId")
+      .references(() => users.id, {
+        onDelete: "set null",
+      }),
+
+    reviewedAt: timestamp("reviewedAt"),
+
+    submittedAt: timestamp("submittedAt")
+      .defaultNow()
+      .notNull(),
+  },
+  table => [
+    index("regulatory_reports_authority_idx").on(
+      table.authorityId,
+      table.submittedAt
+    ),
+
+    index("regulatory_reports_academy_idx").on(
+      table.academyId,
+      table.submittedAt
+    ),
+  ]
+);
+
+
+
+export const licenseNotifications = mysqlTable(
+  "license_notifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    authorityId: int("authorityId")
+      .notNull()
+      .references(() => regulatoryAuthorities.id),
+
+    academyLicenseId: int("academyLicenseId")
+      .references(() => academyLicenses.id, {
+        onDelete: "cascade",
+      }),
+
+    coachLicenseId: int("coachLicenseId")
+      .references(() => coachLicenses.id, {
+        onDelete: "cascade",
+      }),
+
+    notificationType: mysqlEnum("notificationType", [
+      "expiring_soon",
+      "expired",
+    ]).notNull(),
+
+    recipientUserId: int("recipientUserId")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
+
+    message: text("message").notNull(),
+
+    isRead: boolean("isRead")
+      .notNull()
+      .default(false),
+
+    createdAt: timestamp("createdAt")
+      .defaultNow()
+      .notNull(),
+  },
+  table => [
+    index("license_notifications_recipient_idx").on(
+      table.recipientUserId,
+      table.isRead
+    ),
+  ]
+);
+
+export type RegulatoryAuthority =
+  typeof regulatoryAuthorities.$inferSelect;
+
+export type AuthorityMembership =
+  typeof authorityMemberships.$inferSelect;
+
+export type AcademyAuthorityLink =
+  typeof academyAuthorityLinks.$inferSelect;
+
+export type Coach =
+  typeof coaches.$inferSelect;
+
+export type AcademyLicense =
+  typeof academyLicenses.$inferSelect;
+
+export type CoachLicense =
+  typeof coachLicenses.$inferSelect;
+
+export type RegulatoryReport =
+  typeof regulatoryReports.$inferSelect;
+
+export type LicenseNotification =
+  typeof licenseNotifications.$inferSelect;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;

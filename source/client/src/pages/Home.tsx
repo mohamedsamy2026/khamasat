@@ -1,10 +1,12 @@
+
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
-  ArrowRight,
+  ArrowLeft,
   ChartNoAxesCombined,
   FileText,
   GraduationCap,
+  Landmark,
   Loader2,
   LockKeyhole,
   Shield,
@@ -16,181 +18,341 @@ import { startLogin } from "@/const";
 import { toast } from "sonner";
 import "./home-reference.css";
 
+type DemoType = "academy" | "club";
+type EntryType = DemoType | "ministry";
+
+type RegulatoryMeResponse = {
+  authorities?: Array<{
+    id: number;
+    name: string;
+    role: "admin" | "reviewer" | "viewer";
+  }>;
+};
+
 export default function Home() {
-  const { session, enterDemo, loading, error, invalidate } = useAthlete();
-  const [entering, setEntering] = useState<"academy" | "club" | null>(null);
+  const {
+    session,
+    enterDemo,
+    loading,
+    error,
+    invalidate,
+  } = useAthlete();
+
   const [, navigate] = useLocation();
-  const enter = async (type: "academy" | "club") => {
+
+  const [entering, setEntering] = useState<EntryType | null>(
+    null
+  );
+
+  const isBusy = loading || entering !== null;
+
+  const enterDemoSpace = async (type: DemoType) => {
+    if (isBusy) return;
+
     setEntering(type);
+
     try {
       await enterDemo(type);
-      navigate(type === "academy" ? "/academies" : "/clubs");
+
+      navigate(
+        type === "academy" ? "/academies" : "/clubs"
+      );
     } catch (problem) {
       toast.error(
-        problem instanceof Error ? problem.message : "تعذر فتح مساحة العرض"
+        problem instanceof Error
+          ? problem.message
+          : "تعذر فتح مساحة العرض"
       );
     } finally {
       setEntering(null);
     }
   };
+
   const login = () => {
     try {
       clearDemoToken();
       startLogin();
     } catch (problem) {
       toast.error(
-        problem instanceof Error ? problem.message : "تعذر تسجيل الدخول"
+        problem instanceof Error
+          ? problem.message
+          : "تعذر تسجيل الدخول"
       );
     }
   };
 
+  const enterMinistry = async () => {
+    if (isBusy) return;
+
+    setEntering("ministry");
+
+    try {
+      clearDemoToken();
+
+      const response = await fetch("/api/regulatory/me", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (response.status === 401) {
+        navigate("/login");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `تعذر التحقق من صلاحيات الجهة التنظيمية (${response.status})`
+        );
+      }
+
+      const data =
+        (await response.json()) as RegulatoryMeResponse;
+
+      if (
+        !Array.isArray(data.authorities) ||
+        data.authorities.length === 0
+      ) {
+        toast.error(
+          "حسابك غير مرتبط بجهة تنظيمية. يلزم تفويض من مسؤول الجهة."
+        );
+        return;
+      }
+
+      navigate("/ministry");
+    } catch (problem) {
+      toast.error(
+        problem instanceof Error
+          ? problem.message
+          : "تعذر فتح بوابة الجهات التنظيمية"
+      );
+    } finally {
+      setEntering(null);
+    }
+  };
+
+  const entries = [
+    {
+      type: "academy" as const,
+      title: "الأكاديميات",
+      description: "إدارة اللاعبين وتحليل الأداء وتطويرهم",
+      icon: GraduationCap,
+      action: () => enterDemoSpace("academy"),
+    },
+    {
+      type: "club" as const,
+      title: "الأندية",
+      description: "البحث عن المواهب واستقطاب اللاعبين",
+      icon: Shield,
+      action: () => enterDemoSpace("club"),
+    },
+    {
+      type: "ministry" as const,
+      title: "الجهات التنظيمية",
+      description: "الإشراف على الأكاديميات والتراخيص والتقارير",
+      icon: Landmark,
+      action: enterMinistry,
+    },
+  ];
+
+  const features = [
+    {
+      title: "ربط الأكاديميات بالأندية",
+      icon: Users,
+    },
+    {
+      title: "متابعة التطور والإمكانات المستقبلية",
+      icon: TrendingUp,
+    },
+    {
+      title: "ملف رقمي شامل لكل لاعب",
+      icon: FileText,
+    },
+    {
+      title: "تحليل الأداء بالذكاء الاصطناعي*",
+      icon: ChartNoAxesCombined,
+    },
+  ];
+
   return (
     <main className="athlete-landing" dir="rtl">
-      <section className="landing-stage" aria-label="منصة ATHLETE AI">
+      <div className="landing-stage">
         <div className="landing-scene" aria-hidden="true" />
         <div className="landing-lights" aria-hidden="true" />
         <div className="landing-grass" aria-hidden="true" />
-        <div className="landing-content">
-          <div className="landing-heading">
-            <Link
-              className="landing-brand"
-              href="/"
-              aria-label="ATHLETE AI الرئيسية"
-            >
-              <img src="/brand/mark.png" alt="رمز ATHLETE AI" />
-              <span dir="ltr">
-                ATHLETE <b>AI</b>
-              </span>
-            </Link>
-            <h1>
-              منصة ذكية لتحليل الأداء الرياضي
-              <br />
-              واكتشاف المواهب
-            </h1>
-            <p className="landing-tagline">
-              تحليل علمي .. تطور مستمر .. مستقبل واعد
-            </p>
-            <p className="landing-english" dir="ltr">
-              Unlock Potential. Build the Future.
-            </p>
-          </div>
 
-          <div className="landing-entries">
-            <button
-              className="landing-entry"
-              onClick={() => void enter("academy")}
-              disabled={loading || Boolean(entering)}
-              type="button"
-            >
-              <GraduationCap size={56} strokeWidth={1.65} aria-hidden="true" />
-              <h2>الأكاديميات</h2>
-              <span className="landing-divider" />
-              <p>
-                إدارة اللاعبين
-                <br />
-                وتحليل الأداء وتطويرهم
+        <div className="landing-content">
+          <section
+            className="landing-hero"
+            aria-label="منصة ATHLETE AI"
+          >
+            <div className="landing-heading">
+              <Link
+                href="/"
+                className="landing-brand"
+                aria-label="ATHLETE AI الرئيسية"
+              >
+                <img
+                  src="/brand/mark.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+
+                <span dir="ltr">
+                  ATHLETE <b>AI</b>
+                </span>
+              </Link>
+
+              <h1>
+                منصة ذكية لتحليل الأداء الرياضي
+                <span>واكتشاف المواهب</span>
+              </h1>
+
+              <p className="landing-tagline">
+                تحليل علمي · تطور مستمر · مستقبل واعد
               </p>
-              <span className="landing-arrow">
-                <ArrowRight size={25} aria-hidden="true" />
-              </span>
-            </button>
-            <button
-              className="landing-entry landing-club"
-              onClick={() => void enter("club")}
-              disabled={loading || Boolean(entering)}
-              type="button"
-            >
-              <Shield size={53} strokeWidth={2.4} aria-hidden="true" />
-              <h2>الأندية</h2>
-              <span className="landing-divider" />
-              <p>
-                البحث عن المواهب
-                <br />
-                واستقطاب اللاعبين
+
+              <p className="landing-english" dir="ltr">
+                Unlock Potential. Build the Future.
               </p>
-              <span className="landing-arrow">
-                <ArrowRight size={25} aria-hidden="true" />
-              </span>
-            </button>
-          </div>
+            </div>
+
+            <div
+              className="landing-entries"
+              aria-label="اختر مساحة العمل"
+            >
+              {entries.map(entry => {
+                const Icon = entry.icon;
+                const busy = entering === entry.type;
+
+                return (
+                  <button
+                    key={entry.type}
+                    type="button"
+                    className={`landing-entry landing-${entry.type}`}
+                    onClick={() => void entry.action()}
+                    disabled={isBusy}
+                    aria-busy={busy}
+                  >
+                    <span className="landing-entry-icon">
+                      <Icon
+                        size={35}
+                        strokeWidth={1.7}
+                        aria-hidden="true"
+                      />
+                    </span>
+
+                    <span className="landing-entry-body">
+                      <span className="landing-entry-title">
+                        {entry.title}
+                      </span>
+
+                      <span className="landing-divider" />
+
+                      <span className="landing-entry-description">
+                        {entry.description}
+                      </span>
+                    </span>
+
+                    <span className="landing-arrow">
+                      {busy ? (
+                        <Loader2
+                          className="landing-spin"
+                          size={20}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <ArrowLeft
+                          size={20}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
           <section
             className="landing-features"
-            aria-label="نبذة عن إمكانات المنصة"
+            aria-label="إمكانات المنصة"
           >
-            <div className="landing-feature">
-              <Users size={38} strokeWidth={1.8} aria-hidden="true" />
-              <span>
-                ربط الأكاديميات
-                <br />
-                بالأندية
-              </span>
-            </div>
-            <div className="landing-feature">
-              <TrendingUp size={38} strokeWidth={1.8} aria-hidden="true" />
-              <span>
-                متابعة التطور
-                <br />
-                والإمكانات المستقبلية
-              </span>
-            </div>
-            <div className="landing-feature">
-              <FileText size={37} strokeWidth={1.6} aria-hidden="true" />
-              <span>
-                ملف رقمي شامل
-                <br />
-                لكل لاعب
-              </span>
-            </div>
-            <div className="landing-feature">
-              <ChartNoAxesCombined
-                size={38}
-                strokeWidth={1.8}
-                aria-hidden="true"
-              />
-              <span>
-                تحليل الأداء
-                <br />
-                بالذكاء الاصطناعي*
-              </span>
-            </div>
+            {features.map(feature => {
+              const Icon = feature.icon;
+
+              return (
+                <div
+                  className="landing-feature"
+                  key={feature.title}
+                >
+                  <Icon
+                    size={27}
+                    strokeWidth={1.7}
+                    aria-hidden="true"
+                  />
+                  <span>{feature.title}</span>
+                </div>
+              );
+            })}
           </section>
 
           <div className="landing-access">
             {loading || entering ? (
-              <span role="status">
-                <Loader2 className="spin" size={16} /> جارٍ تهيئة مساحة العرض…
+              <span className="landing-access-link" role="status">
+                <Loader2
+                  size={17}
+                  className="landing-spin"
+                />
+                جارٍ تهيئة مساحة العمل...
               </span>
             ) : session?.user ? (
-              <Link href="/academies">
-                فتح مساحة {session.user.name || "حسابك"}{" "}
-                <ArrowRight size={16} />
-              </Link>
+              <button
+                type="button"
+                className="landing-access-link"
+                onClick={() => navigate("/academies")}
+              >
+                فتح مساحة {session.user.name || "حسابك"}
+                <ArrowLeft size={16} />
+              </button>
             ) : (
-              <button onClick={login} type="button">
-                <LockKeyhole size={16} /> تسجيل الدخول للبيانات الحقيقية
+              <button
+                type="button"
+                className="landing-access-link"
+                onClick={login}
+              >
+                <LockKeyhole size={16} />
+                تسجيل الدخول للبيانات الحقيقية
+                <ArrowLeft size={15} />
               </button>
             )}
+
             <p>
-              نسخة عرض تجريبية — بيانات افتراضية متاحة دون تسجيل دخول؛ البيانات
-              الحقيقية محمية
+              نسخة العرض التجريبية تحتوي بيانات افتراضية،
+              والبيانات الحقيقية محمية بتسجيل الدخول.
             </p>
+
             <small>
-              * تقييمات الملف قيم افتراضية أو مُدخلة يدويًا وليست مستخرجة من
-              الفيديو؛ تعرض نتائج الرؤية الحاسوبية الزوايا ثنائية الأبعاد فقط.
+              * التقييمات التجريبية افتراضية أو مدخلة
+              يدويًا، ولا تُستخرج من الفيديو. نتائج
+              الرؤية الحاسوبية تعرض الزوايا ثنائية
+              الأبعاد فقط.
             </small>
+
             {Boolean(error) && (
               <button
+                type="button"
                 className="landing-retry"
                 onClick={() => void invalidate()}
-                type="button"
               >
                 تعذر التحقق من الجلسة — إعادة المحاولة
               </button>
             )}
           </div>
         </div>
-      </section>
+      </div>
     </main>
   );
 }

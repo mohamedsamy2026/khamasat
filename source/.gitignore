@@ -114,3 +114,10 @@ client/public/__manus__/version.json
 
 # Original reference slides are review-only and never part of the website bundle.
 reference-assets/
+
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+*.log
