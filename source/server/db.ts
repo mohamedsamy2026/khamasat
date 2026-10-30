@@ -1,13 +1,15 @@
 
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import {
+  drizzle,
+  type MySql2Database,
+} from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 
 import type { InsertUser } from "../drizzle/schema";
 import { users } from "../drizzle/schema";
 
-type Database = ReturnType<typeof drizzle>;
-
+type Database = MySql2Database;
 let _db: Database | null = null;
 let _dbPromise: Promise<Database | null> | null = null;
 

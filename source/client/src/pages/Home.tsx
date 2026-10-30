@@ -1,17 +1,21 @@
-
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
+  Activity,
   ArrowLeft,
   ChartNoAxesCombined,
+  ChevronDown,
+  Dumbbell,
   FileText,
   GraduationCap,
   Landmark,
   Loader2,
   LockKeyhole,
+  Menu,
   Shield,
   TrendingUp,
   Users,
+  X,
 } from "lucide-react";
 import { clearDemoToken, useAthlete } from "@/lib/athleteApi";
 import { startLogin } from "@/const";
@@ -30,38 +34,21 @@ type RegulatoryMeResponse = {
 };
 
 export default function Home() {
-  const {
-    session,
-    enterDemo,
-    loading,
-    error,
-    invalidate,
-  } = useAthlete();
-
+  const { session, enterDemo, loading, error, invalidate } = useAthlete();
   const [, navigate] = useLocation();
-
-  const [entering, setEntering] = useState<EntryType | null>(
-    null
-  );
-
+  const [entering, setEntering] = useState<EntryType | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const isBusy = loading || entering !== null;
 
-  const enterDemoSpace = async (type: DemoType) => {
+  const enterDemoSpace = async (type: DemoType, destination?: string) => {
     if (isBusy) return;
-
     setEntering(type);
-
     try {
       await enterDemo(type);
-
-      navigate(
-        type === "academy" ? "/academies" : "/clubs"
-      );
+      navigate(destination ?? (type === "academy" ? "/academies" : "/clubs"));
     } catch (problem) {
       toast.error(
-        problem instanceof Error
-          ? problem.message
-          : "تعذر فتح مساحة العرض"
+        problem instanceof Error ? problem.message : "تعذر فتح مساحة العرض"
       );
     } finally {
       setEntering(null);
@@ -74,53 +61,35 @@ export default function Home() {
       startLogin();
     } catch (problem) {
       toast.error(
-        problem instanceof Error
-          ? problem.message
-          : "تعذر تسجيل الدخول"
+        problem instanceof Error ? problem.message : "تعذر تسجيل الدخول"
       );
     }
   };
 
   const enterMinistry = async () => {
     if (isBusy) return;
-
     setEntering("ministry");
-
     try {
       clearDemoToken();
-
       const response = await fetch("/api/regulatory/me", {
         method: "GET",
         credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
+        headers: { Accept: "application/json" },
       });
-
       if (response.status === 401) {
         navigate("/login");
         return;
       }
-
       if (!response.ok) {
         throw new Error(
           `تعذر التحقق من صلاحيات الجهة التنظيمية (${response.status})`
         );
       }
-
-      const data =
-        (await response.json()) as RegulatoryMeResponse;
-
-      if (
-        !Array.isArray(data.authorities) ||
-        data.authorities.length === 0
-      ) {
-        toast.error(
-          "حسابك غير مرتبط بجهة تنظيمية. يلزم تفويض من مسؤول الجهة."
-        );
+      const data = (await response.json()) as RegulatoryMeResponse;
+      if (!Array.isArray(data.authorities) || data.authorities.length === 0) {
+        toast.error("حسابك غير مرتبط بجهة تنظيمية. يلزم تفويض من مسؤول الجهة.");
         return;
       }
-
       navigate("/ministry");
     } catch (problem) {
       toast.error(
@@ -133,225 +102,216 @@ export default function Home() {
     }
   };
 
-  const entries = [
-    {
-      type: "academy" as const,
-      title: "الأكاديميات",
-      description: "إدارة اللاعبين وتحليل الأداء وتطويرهم",
-      icon: GraduationCap,
-      action: () => enterDemoSpace("academy"),
-    },
-    {
-      type: "club" as const,
-      title: "الأندية",
-      description: "البحث عن المواهب واستقطاب اللاعبين",
-      icon: Shield,
-      action: () => enterDemoSpace("club"),
-    },
-    {
-      type: "ministry" as const,
-      title: "الجهات التنظيمية",
-      description: "الإشراف على الأكاديميات والتراخيص والتقارير",
-      icon: Landmark,
-      action: enterMinistry,
-    },
-  ];
+  const openAccount = () => {
+    if (session?.user) navigate("/academies");
+    else login();
+    setMenuOpen(false);
+  };
 
   const features = [
     {
-      title: "ربط الأكاديميات بالأندية",
-      icon: Users,
+      title: "تحليل الحركة",
+      description: "فهم أعمق للأداء الرياضي",
+      icon: Activity,
     },
     {
-      title: "متابعة التطور والإمكانات المستقبلية",
-      icon: TrendingUp,
-    },
-    {
-      title: "ملف رقمي شامل لكل لاعب",
+      title: "ملف رياضي متكامل",
+      description: "جميع بيانات الرياضي في مكان واحد",
       icon: FileText,
     },
     {
-      title: "تحليل الأداء بالذكاء الاصطناعي*",
-      icon: ChartNoAxesCombined,
+      title: "متابعة التطور",
+      description: "مراقبة مستمرة لرحلة الرياضي",
+      icon: TrendingUp,
     },
   ];
 
   return (
     <main className="athlete-landing" dir="rtl">
-      <div className="landing-stage">
-        <div className="landing-scene" aria-hidden="true" />
-        <div className="landing-lights" aria-hidden="true" />
-        <div className="landing-grass" aria-hidden="true" />
+      <div className="landing-stage" id="top">
+        <header className="landing-header">
+          <Link href="/" className="landing-brand" aria-label="ATHLETE AI الرئيسية">
+            <img src="/brand/mark.png" alt="" aria-hidden="true" />
+            <span dir="ltr">ATHLETE <strong>AI</strong></span>
+          </Link>
 
-        <div className="landing-content">
-          <section
-            className="landing-hero"
-            aria-label="منصة ATHLETE AI"
+          <nav className={`landing-navigation ${menuOpen ? "is-open" : ""}`} aria-label="التنقل الرئيسي">
+            <a className="is-current" href="#top" onClick={() => setMenuOpen(false)}>الرئيسية</a>
+            <a href="#platform" onClick={() => setMenuOpen(false)}>عن المنصة</a>
+            <a href="#sports" onClick={() => setMenuOpen(false)}>
+              الرياضات <ChevronDown size={15} aria-hidden="true" />
+            </a>
+          </nav>
+
+          <button type="button" className="landing-header-login" onClick={openAccount}>
+            <Users size={18} strokeWidth={1.7} aria-hidden="true" />
+            {session?.user ? "دخول حسابي" : "تسجيل الدخول"}
+          </button>
+
+          <button
+            type="button"
+            className="landing-menu-toggle"
+            aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(value => !value)}
           >
-            <div className="landing-heading">
-              <Link
-                href="/"
-                className="landing-brand"
-                aria-label="ATHLETE AI الرئيسية"
+            {menuOpen ? <X size={23} /> : <Menu size={23} />}
+          </button>
+        </header>
+
+        <section className="landing-hero" aria-labelledby="landing-main-title">
+          <div className="landing-hero-image" aria-hidden="true" />
+          <div className="landing-hero-shade" aria-hidden="true" />
+          <div className="landing-hero-copy">
+            <div className="landing-eyebrow"><span />منصة رياضية متكاملة</div>
+            <h1 id="landing-main-title">
+              <span>حيث تبدأ</span>
+              <span className="landing-gradient-text">رحلة الأبطال</span>
+            </h1>
+            <p className="landing-hero-description">
+              تحليل ذكي للأداء الرياضي، وتطوير المواهب،
+              <br className="landing-desktop-break" /> وربط الأكاديميات بالأندية
+            </p>
+            <div className="landing-promise">
+              <ChartNoAxesCombined size={22} strokeWidth={1.8} aria-hidden="true" />
+              <span>رؤية أعمق. تطور مستمر.</span>
+            </div>
+          </div>
+        </section>
+
+        <div className="landing-body">
+          <section className="landing-spaces" id="platform" aria-label="مساحات العمل في المنصة">
+            <div className="landing-primary-cards">
+              <button
+                type="button"
+                className="landing-space-card landing-academy-card"
+                onClick={() => void enterDemoSpace("academy")}
+                disabled={isBusy}
+                aria-busy={entering === "academy"}
               >
-                <img
-                  src="/brand/mark.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-
-                <span dir="ltr">
-                  ATHLETE <b>AI</b>
+                <span className="landing-card-number">01</span>
+                <GraduationCap className="landing-card-watermark" size={150} strokeWidth={0.65} aria-hidden="true" />
+                <span className="landing-card-content">
+                  <span className="landing-card-heading">الأكاديميات</span>
+                  <span className="landing-card-desc">إدارة الرياضيين وتحليل الأداء<br />ومتابعة التطور</span>
+                  <span className="landing-card-cta">
+                    {entering === "academy" ? <Loader2 className="landing-spin" size={17} /> : <ArrowLeft size={18} />}
+                    دخول الأكاديميات
+                  </span>
                 </span>
-              </Link>
+              </button>
 
-              <h1>
-                منصة ذكية لتحليل الأداء الرياضي
-                <span>واكتشاف المواهب</span>
-              </h1>
-
-              <p className="landing-tagline">
-                تحليل علمي · تطور مستمر · مستقبل واعد
-              </p>
-
-              <p className="landing-english" dir="ltr">
-                Unlock Potential. Build the Future.
-              </p>
+              <button
+                type="button"
+                className="landing-space-card landing-club-card"
+                onClick={() => void enterDemoSpace("club")}
+                disabled={isBusy}
+                aria-busy={entering === "club"}
+              >
+                <span className="landing-card-number">02</span>
+                <Shield className="landing-card-watermark" size={160} strokeWidth={0.65} aria-hidden="true" />
+                <span className="landing-card-content">
+                  <span className="landing-card-heading">الأندية</span>
+                  <span className="landing-card-desc">اكتشاف المواهب<br />واستقطاب الرياضيين</span>
+                  <span className="landing-card-cta">
+                    {entering === "club" ? <Loader2 className="landing-spin" size={17} /> : <ArrowLeft size={18} />}
+                    دخول الأندية
+                  </span>
+                </span>
+              </button>
             </div>
 
-            <div
-              className="landing-entries"
-              aria-label="اختر مساحة العمل"
+            <button
+              type="button"
+              className="landing-ministry-card"
+              onClick={() => void enterMinistry()}
+              disabled={isBusy}
+              aria-busy={entering === "ministry"}
             >
-              {entries.map(entry => {
-                const Icon = entry.icon;
-                const busy = entering === entry.type;
+              <span className="landing-ministry-icon"><Landmark size={24} strokeWidth={1.5} aria-hidden="true" /></span>
+              <span className="landing-ministry-text">
+                <strong>الجهات التنظيمية</strong>
+                <span>الإشراف على الأكاديميات والتراخيص والتقارير</span>
+              </span>
+              {entering === "ministry" ? <Loader2 className="landing-spin" size={19} /> : <ArrowLeft size={21} />}
+            </button>
+          </section>
 
-                return (
-                  <button
-                    key={entry.type}
-                    type="button"
-                    className={`landing-entry landing-${entry.type}`}
-                    onClick={() => void entry.action()}
-                    disabled={isBusy}
-                    aria-busy={busy}
-                  >
-                    <span className="landing-entry-icon">
-                      <Icon
-                        size={35}
-                        strokeWidth={1.7}
-                        aria-hidden="true"
-                      />
-                    </span>
-
-                    <span className="landing-entry-body">
-                      <span className="landing-entry-title">
-                        {entry.title}
-                      </span>
-
-                      <span className="landing-divider" />
-
-                      <span className="landing-entry-description">
-                        {entry.description}
-                      </span>
-                    </span>
-
-                    <span className="landing-arrow">
-                      {busy ? (
-                        <Loader2
-                          className="landing-spin"
-                          size={20}
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <ArrowLeft
-                          size={20}
-                          aria-hidden="true"
-                        />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+          <section className="landing-sports" id="sports" aria-labelledby="landing-sports-title">
+            <div className="landing-section-heading">
+              <span className="landing-heading-line" />
+              <h2 id="landing-sports-title">لكل رياضة مساحة</h2>
+              <span className="landing-heading-line" />
+            </div>
+            <div className="landing-sport-grid">
+              <button
+                type="button"
+                className="landing-sport-card landing-sport-football"
+                onClick={() => void enterDemoSpace("academy", "/analysis")}
+                disabled={isBusy}
+              >
+                <span aria-hidden="true" className="landing-sport-ball">⚽</span>
+                <span>كرة القدم</span>
+                <ArrowLeft size={18} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="landing-sport-card"
+                onClick={() => void enterDemoSpace("academy", "/gymnastics")}
+                disabled={isBusy}
+              >
+                <Dumbbell size={26} strokeWidth={1.5} aria-hidden="true" />
+                <span>الجمباز</span>
+                <ArrowLeft size={18} aria-hidden="true" />
+              </button>
             </div>
           </section>
 
-          <section
-            className="landing-features"
-            aria-label="إمكانات المنصة"
-          >
+          <section className="landing-features" id="features" aria-label="مميزات المنصة">
             {features.map(feature => {
               const Icon = feature.icon;
-
               return (
-                <div
-                  className="landing-feature"
-                  key={feature.title}
-                >
-                  <Icon
-                    size={27}
-                    strokeWidth={1.7}
-                    aria-hidden="true"
-                  />
-                  <span>{feature.title}</span>
+                <div className="landing-feature" key={feature.title}>
+                  <Icon size={35} strokeWidth={1.3} aria-hidden="true" />
+                  <div>
+                    <strong>{feature.title}</strong>
+                    <span>{feature.description}</span>
+                  </div>
                 </div>
               );
             })}
           </section>
 
-          <div className="landing-access">
+          <div className="landing-access" aria-live="polite">
             {loading || entering ? (
-              <span className="landing-access-link" role="status">
-                <Loader2
-                  size={17}
-                  className="landing-spin"
-                />
-                جارٍ تهيئة مساحة العمل...
-              </span>
+              <span role="status"><Loader2 className="landing-spin" size={16} /> جارٍ تهيئة مساحة العمل...</span>
             ) : session?.user ? (
-              <button
-                type="button"
-                className="landing-access-link"
-                onClick={() => navigate("/academies")}
-              >
-                فتح مساحة {session.user.name || "حسابك"}
-                <ArrowLeft size={16} />
+              <button type="button" onClick={() => navigate("/academies")}>
+                فتح مساحة {session.user.name || "حسابك"} <ArrowLeft size={16} />
               </button>
             ) : (
-              <button
-                type="button"
-                className="landing-access-link"
-                onClick={login}
-              >
-                <LockKeyhole size={16} />
-                تسجيل الدخول للبيانات الحقيقية
-                <ArrowLeft size={15} />
+              <button type="button" onClick={login}>
+                <LockKeyhole size={15} /> تسجيل الدخول للبيانات الحقيقية
               </button>
             )}
-
-            <p>
-              نسخة العرض التجريبية تحتوي بيانات افتراضية،
-              والبيانات الحقيقية محمية بتسجيل الدخول.
-            </p>
-
-            <small>
-              * التقييمات التجريبية افتراضية أو مدخلة
-              يدويًا، ولا تُستخرج من الفيديو. نتائج
-              الرؤية الحاسوبية تعرض الزوايا ثنائية
-              الأبعاد فقط.
-            </small>
-
+            <p>نسخة العرض التجريبية تحتوي بيانات افتراضية؛ البيانات الحقيقية محمية بتسجيل الدخول.</p>
+            <small>* التقييمات التجريبية افتراضية أو مُدخلة يدويًا، ولا تُستخرج من الفيديو. نتائج الرؤية الحاسوبية تعرض الزوايا ثنائية الأبعاد فقط.</small>
             {Boolean(error) && (
-              <button
-                type="button"
-                className="landing-retry"
-                onClick={() => void invalidate()}
-              >
+              <button className="landing-retry" type="button" onClick={() => void invalidate()}>
                 تعذر التحقق من الجلسة — إعادة المحاولة
               </button>
             )}
           </div>
         </div>
+
+        <footer className="landing-footer">
+          <a href="#top" className="landing-footer-brand" aria-label="العودة لأعلى الصفحة">
+            <img src="/brand/mark.png" alt="" aria-hidden="true" />
+            <span dir="ltr">ATHLETE AI</span>
+            <small>مستقبل الرياضة يبدأ من هنا</small>
+          </a>
+          <p>© {new Date().getFullYear()} ATHLETE AI</p>
+        </footer>
       </div>
     </main>
   );
