@@ -12,6 +12,7 @@ import { registerAuthRoutes } from "../auth/routes";
 import { registerRegulatoryRoutes } from "../regulatory";
 async function startServer() {
   const app = express();
+  app.set("trust proxy", 1);
   const server = createServer(app);
   // These are public model binaries, never user videos or player files.
   app.use(
