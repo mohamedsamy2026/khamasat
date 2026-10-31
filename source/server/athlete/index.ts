@@ -2263,25 +2263,41 @@ export function registerAthleteRoutes(app: Express): void {
           .set({ evaluationSnapshot })
           .where(eq(analyses.id, analysisId));
         const recordingAction = automaticRecordingAction(pose);
-        if (payload.observations.length) {
-          await tx.insert(notes).values(
-            payload.observations.map(observation => ({
-              playerId: target.player.id,
-              organizationId: context.organizationId,
-              authorUserId: null,
-              analysisId,
-              source: "automatic" as const,
-              authorName: "تحليل آلي — ليس مدربًا",
-              text: `${observation.title}: ${observation.detail}`,
-              originalText: `${observation.title}: ${observation.detail}`,
-              requiredAction: recordingAction,
-              visibility: "shared" as const,
-              revisions: [],
-              createdAt: now,
-              updatedAt: now,
-            }))
-          );
-        }
+   if (payload.observations.length) {
+  const noteRows = payload.observations.flatMap(observation => {
+    const fullText = `${observation.title}: ${observation.detail}`;
+
+    // تقسيم النصوص الطويلة بدل فقدان المعلومات
+    const chunks = fullText.match(/[\s\S]{1,900}/g) ?? [];
+
+    return chunks.map((chunk, index) => {
+      const noteText =
+        chunks.length > 1
+          ? `[${index + 1}/${chunks.length}] ${chunk}`
+          : chunk;
+
+      return {
+        playerId: target.player.id,
+        organizationId: context.organizationId,
+        authorUserId: null,
+        analysisId,
+        source: "automatic" as const,
+        authorName: "تحليل آلي — ليس مدربًا",
+        text: noteText,
+        originalText: noteText,
+        requiredAction: recordingAction,
+        visibility: "shared" as const,
+        revisions: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+  });
+
+  if (noteRows.length) {
+    await tx.insert(notes).values(noteRows);
+  }
+}
         await tx
           .update(players)
           .set({ lastAnalysisAt: now })
