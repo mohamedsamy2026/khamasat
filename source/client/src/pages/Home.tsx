@@ -4,8 +4,6 @@ import {
   Activity,
   ArrowLeft,
   ChartNoAxesCombined,
-  ChevronDown,
-  Dumbbell,
   FileText,
   GraduationCap,
   Landmark,
@@ -40,12 +38,12 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const isBusy = loading || entering !== null;
 
-  const enterDemoSpace = async (type: DemoType, destination?: string) => {
+  const enterDemoSpace = async (type: DemoType) => {
     if (isBusy) return;
     setEntering(type);
     try {
       await enterDemo(type);
-      navigate(destination ?? (type === "academy" ? "/academies" : "/clubs"));
+      navigate(type === "academy" ? "/academies" : "/clubs");
     } catch (problem) {
       toast.error(
         problem instanceof Error ? problem.message : "تعذر فتح مساحة العرض"
@@ -138,9 +136,6 @@ export default function Home() {
           <nav className={`landing-navigation ${menuOpen ? "is-open" : ""}`} aria-label="التنقل الرئيسي">
             <a className="is-current" href="#top" onClick={() => setMenuOpen(false)}>الرئيسية</a>
             <a href="#platform" onClick={() => setMenuOpen(false)}>عن المنصة</a>
-            <a href="#sports" onClick={() => setMenuOpen(false)}>
-              الرياضات <ChevronDown size={15} aria-hidden="true" />
-            </a>
           </nav>
 
           <button type="button" className="landing-header-login" onClick={openAccount}>
@@ -235,36 +230,6 @@ export default function Home() {
               </span>
               {entering === "ministry" ? <Loader2 className="landing-spin" size={19} /> : <ArrowLeft size={21} />}
             </button>
-          </section>
-
-          <section className="landing-sports" id="sports" aria-labelledby="landing-sports-title">
-            <div className="landing-section-heading">
-              <span className="landing-heading-line" />
-              <h2 id="landing-sports-title">لكل رياضة مساحة</h2>
-              <span className="landing-heading-line" />
-            </div>
-            <div className="landing-sport-grid">
-              <button
-                type="button"
-                className="landing-sport-card landing-sport-football"
-                onClick={() => void enterDemoSpace("academy", "/analysis")}
-                disabled={isBusy}
-              >
-                <span aria-hidden="true" className="landing-sport-ball">⚽</span>
-                <span>كرة القدم</span>
-                <ArrowLeft size={18} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="landing-sport-card"
-                onClick={() => void enterDemoSpace("academy", "/gymnastics")}
-                disabled={isBusy}
-              >
-                <Dumbbell size={26} strokeWidth={1.5} aria-hidden="true" />
-                <span>الجمباز</span>
-                <ArrowLeft size={18} aria-hidden="true" />
-              </button>
-            </div>
           </section>
 
           <section className="landing-features" id="features" aria-label="مميزات المنصة">

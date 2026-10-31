@@ -24,8 +24,6 @@ import {
 } from "@shared/athlete";
 import {
   ALL_GROUPS,
-  DEFAULT_SPORT,
-  SPORT_IDS,
   gymnasticsCategoryName,
   isSportId,
   sportDefinition,
@@ -250,7 +248,7 @@ function TalentCard({
         ) : (
           <button className="btn btn-outline" type="button" onClick={onRequest}>
             <LockKeyhole size={16} />
-            طلب الوصول من الأكاديمية
+            طلب الملف كاملًا
           </button>
         )}
       </div>
@@ -270,7 +268,7 @@ function TalentCard({
             }
           >
             <LockKeyhole size={16} />
-            طلب الوصول من الأكاديمية
+            طلب الملف كاملًا
           </button>
           <p className="helper">
             الملف الافتراضي متاح مباشرة للعرض. الموافقة مطلوبة للبيانات
@@ -430,7 +428,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
   const [height, setHeight] = useState<RangeValue>([140, 210]);
   const [weight, setWeight] = useState<RangeValue>([35, 110]);
   const [positions, setPositions] = useState<Set<string>>(new Set());
-  const [sports, setSports] = useState<Set<SportId>>(new Set());
+  const [sportFilter, setSportFilter] = useState<SportId | "">("");
   const [skills, setSkills] = useState<Set<string>>(new Set());
   const [region, setRegion] = useState("");
   const [foot, setFoot] = useState("");
@@ -443,6 +441,12 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
   const [favoriteBusyId, setFavoriteBusyId] = useState<number | null>(null);
 
   const players = playersQuery.data ?? [];
+  const activeGroups = sportFilter
+    ? sportDefinition(sportFilter).groups.map(group => group.id)
+    : ALL_GROUPS;
+  const activeTerminology = sportFilter
+    ? sportDefinition(sportFilter).terminology.positions
+    : "المركز أو الفئة";
   const requests = requestsQuery.data ?? [];
   const favoriteIds = useMemo(
     () => new Set(favoritesQuery.data ?? []),
@@ -482,7 +486,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
       const matchesWeight = referenceOnly
         ? weight[0] === 35 && weight[1] === 110
         : player.weight >= weight[0] && player.weight <= weight[1];
-      const matchesSport = sports.size === 0 || sports.has(player.sport);
+      const matchesSport = !sportFilter || player.sport === sportFilter;
       const matchesPosition =
         positions.size === 0 ||
         positions.has(
@@ -540,7 +544,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
     search,
     skills,
     sort,
-    sports,
+    sportFilter,
     weight,
   ]);
 
@@ -675,15 +679,35 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
         }
       >
         <div className="section-stack">
-          <label className="search-field">
-            <Search size={18} />
-            <input
-              value={search}
-              onChange={event => setSearch(event.target.value)}
-              placeholder="ابحث بالاسم أو المركز أو الأكاديمية"
-              aria-label="البحث عن لاعب"
-            />
-          </label>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="search-field flex-1 min-w-[190px]">
+              <Search size={18} />
+              <input
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                placeholder="ابحث بالاسم أو المركز أو الأكاديمية"
+                aria-label="البحث عن لاعب"
+              />
+            </label>
+            <label className="field min-w-[175px]">
+              <span>الرياضة</span>
+              <select
+                aria-label="اختيار الرياضة"
+                value={sportFilter}
+                onChange={event => {
+                  const next = event.target.value;
+                  setSportFilter(isSportId(next) ? next : "");
+                  setPositions(new Set());
+                  setSkills(new Set());
+                  setFoot("");
+                }}
+              >
+                <option value="">جميع الرياضات</option>
+                <option value="football">كرة القدم</option>
+                <option value="gymnastics">الجمباز</option>
+              </select>
+            </label>
+          </div>
           <div className="filters">
             <label>
               <span>المنطقة</span>
@@ -700,7 +724,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
                 ))}
               </select>
             </label>
-            <label>
+            {sportFilter !== "gymnastics" && <label>
               <span>القدم المفضلة</span>
               <select
                 className="field"
@@ -714,7 +738,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
                   </option>
                 ))}
               </select>
-            </label>
+            </label>}
             <label>
               <span>الترتيب</span>
               <select
@@ -769,43 +793,9 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
       </Panel>
 
       <div className="grid-2">
-        <Panel title="الرياضة" icon={Filter}>
+        <Panel title={activeTerminology} icon={ChevronDown}>
           <div className="section-stack">
-            {SPORT_IDS.map(id => (
-              <label className="flex items-center gap-2" key={id}>
-                <input
-                  type="checkbox"
-                  checked={sports.has(id)}
-                  onChange={() =>
-                    setSports(current => {
-                      const next = new Set(current);
-                      if (next.has(id)) next.delete(id);
-                      else next.add(id);
-                      return next;
-                    })
-                  }
-                />
-                <span>{sportDefinition(id).name}</span>
-              </label>
-            ))}
-            {!sports.size ? (
-              <small className="muted">
-                كل الرياضات معروضة. اختيار رياضة يقيد بطاقات الاكتشاف.
-              </small>
-            ) : null}
-          </div>
-        </Panel>
-        <Panel
-          title={
-            sports.size === 1
-              ? sportDefinition([...sports][0] ?? DEFAULT_SPORT).terminology
-                  .positions
-              : "المركز أو الفئة"
-          }
-          icon={ChevronDown}
-        >
-          <div className="section-stack">
-            {ALL_GROUPS.map(position => (
+            {activeGroups.map(position => (
               <label className="flex items-center gap-2" key={position}>
                 <input
                   type="checkbox"
@@ -819,7 +809,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
             ))}
           </div>
         </Panel>
-        <Panel title="المهارات التي عولجت لها مقاطع" icon={ChevronDown}>
+        {sportFilter !== "gymnastics" && <Panel title="المهارات التي عولجت لها مقاطع" icon={ChevronDown}>
           <div className="section-stack">
             {SKILLS.map(skill => (
               <label className="flex items-center gap-2" key={skill}>
@@ -834,7 +824,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
               </label>
             ))}
           </div>
-        </Panel>
+        </Panel>}
       </div>
 
       <Panel

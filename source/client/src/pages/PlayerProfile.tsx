@@ -87,13 +87,13 @@ type ProfileTab =
 
 const profileTabs: { id: ProfileTab; label: string }[] = [
   { id: "overview", label: "نظرة عامة" },
+  { id: "health", label: "الملف الصحي" },
   { id: "physical", label: "التحليل البدني" },
   { id: "motion", label: "التحليل الحركي" },
   { id: "skills", label: "المهارات" },
   { id: "comparison", label: "المقارنات" },
   { id: "videos", label: "الفيديوهات" },
   { id: "reports", label: "التقارير" },
-  { id: "health", label: "الصحة والطوارئ" },
 ];
 
 function formatDate(value: string | null | undefined) {
@@ -375,7 +375,8 @@ function OverviewTab({
           />
         </Panel>
       </div>
-      {!analysis?.evaluation ? <SessionFollowUp playerId={player.id} /> : null}
+      {/* Notes and training plans remain visible even after a session receives an evaluation. */}
+      <SessionFollowUp playerId={player.id} />
       <div className="grid-2 profile-overview-lower">
         <Panel title="تطور الأداء عبر الزمن" icon={Activity}>
           <EmptyState
@@ -932,12 +933,12 @@ export default function PlayerProfile({ id }: { id?: string }) {
             <div>
               <strong>لا تملك صلاحية الاطلاع على التفاصيل الكاملة للاعب</strong>
               <p>
-                يمكن للنادي مراجعة الأندية وطلب الوصول إلى ملف اللاعب قبل عرض
+                يمكن للنادي استكشاف المواهب وطلب الوصول إلى ملف اللاعب قبل عرض
                 التحليلات والفيديوهات.
               </p>
               <div className="inline-actions">
                 <a className="btn btn-primary" href="/clubs">
-                  استكشاف الأندية
+                  استكشاف المواهب
                 </a>
                 <a className="btn btn-outline" href="/requests">
                   طلبات الوصول
@@ -1088,6 +1089,11 @@ export default function PlayerProfile({ id }: { id?: string }) {
         <div className="profile-details-grid">
           <DetailItem
             icon={UserRound}
+            label="العمر"
+            value={isVideoSample ? "غير منسوب" : `${player.age} سنة`}
+          />
+          <DetailItem
+            icon={UserRound}
             label="الفئة العمرية"
             value={
               isVideoSample
@@ -1125,6 +1131,11 @@ export default function PlayerProfile({ id }: { id?: string }) {
             icon={Activity}
             label="الرياضة"
             value={sportDefinition(player.sport).name}
+          />
+          <DetailItem
+            icon={UserRound}
+            label="الموقع"
+            value={isVideoSample ? "غير منسوب" : player.region || "غير محدد"}
           />
           {player.sport === "gymnastics" && player.gymnasticsCategory ? (
             <DetailItem
