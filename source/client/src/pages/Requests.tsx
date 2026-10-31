@@ -24,7 +24,7 @@ import {
   Tabs,
 } from "@/components/athlete/UI";
 
-type RequestTab = "pending" | "approved" | "all";
+type RequestTab = AccessRequest["status"] | "all";
 type RequestAction = "approve" | "reject" | "revoke";
 type Decision = { request: AccessRequest; action: RequestAction };
 
@@ -73,6 +73,9 @@ export default function Requests() {
       pending: requests.filter(request => request.status === "pending").length,
       approved: requests.filter(request => request.status === "approved")
         .length,
+      rejected: requests.filter(request => request.status === "rejected")
+        .length,
+      revoked: requests.filter(request => request.status === "revoked").length,
       all: requests.length,
     }),
     [requests]
@@ -158,6 +161,8 @@ export default function Requests() {
   const tabs = [
     { id: "pending", label: `قيد المراجعة (${counts.pending})` },
     { id: "approved", label: `المقبولة (${counts.approved})` },
+    { id: "rejected", label: `المرفوضة (${counts.rejected})` },
+    { id: "revoked", label: `الملغاة (${counts.revoked})` },
     { id: "all", label: `الكل (${counts.all})` },
   ];
 
@@ -167,8 +172,8 @@ export default function Requests() {
         title={isAcademy ? "طلبات الاطلاع الواردة" : "طلبات الاطلاع المرسلة"}
         subtitle={
           isAcademy
-            ? "راجع طلبات الأندية للاعبين التابعين لأكاديميتك."
-            : "تابع حالة طلبات ناديك. لا يظهر الملف الكامل إلا بعد الموافقة."
+            ? "راجع طلبات الأندية للاعبين التابعين لأكاديميتك؛ يتحقق الخادم من عضوية المراجع وصلاحياته."
+            : "تابع حالة طلبات ناديك. لا يظهر الملف الكامل إلا بعد موافقة الأكاديمية."
         }
         icon={isAcademy ? UsersRound : FileText}
         actions={<DemoBadge />}

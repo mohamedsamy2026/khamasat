@@ -2,6 +2,7 @@ import {
   accessGrants,
   analyses,
   auditEvents,
+  coachAssessments,
   exercisePlans,
   memberships,
   notes,
@@ -49,6 +50,7 @@ export type AthleteRouteFixture = {
   emergencyContacts: Array<Record<string, any>>;
   sensitiveGrants: Array<Record<string, any>>;
   assessments: Array<Record<string, any>>;
+  coachAssessments: Array<Record<string, any>>;
   writes: {
     transactions: number;
     inserts: Array<{ table: unknown; values: unknown }>;
@@ -58,6 +60,7 @@ export type AthleteRouteFixture = {
   nextAnalysisId: number;
   nextExercisePlanId: number;
   nextAssessmentId: number;
+  nextCoachAssessmentId: number;
   nextSensitiveGrantId: number;
 };
 
@@ -215,11 +218,13 @@ export function createAthleteRouteFixture(
     emergencyContacts: [],
     sensitiveGrants: [],
     assessments: [],
+    coachAssessments: [],
     writes: { transactions: 0, inserts: [], playerUpdates: [] },
     nextVideoId: 302,
     nextAnalysisId: 501,
     nextExercisePlanId: 801,
     nextAssessmentId: 901,
+    nextCoachAssessmentId: 1001,
     nextSensitiveGrantId: 951,
     ...overrides,
   };
@@ -251,6 +256,7 @@ function rowsFor(
   if (table === playerEmergencyContacts) return fixture.emergencyContacts;
   if (table === playerSensitiveGrants) return fixture.sensitiveGrants;
   if (table === playerPhysicalAssessments) return fixture.assessments;
+  if (table === coachAssessments) return fixture.coachAssessments;
   return [];
 }
 
@@ -450,6 +456,11 @@ export function createAthleteRouteDb(fixture: AthleteRouteFixture): any {
             );
             fixture.nextAssessmentId += rows.length;
             return [{ insertId: startId }];
+          }
+          if (table === coachAssessments) {
+            const id = fixture.nextCoachAssessmentId++;
+            fixture.coachAssessments.push({ ...values, id });
+            return [{ insertId: id }];
           }
           if (table === playerSensitiveGrants) {
             const id = fixture.nextSensitiveGrantId++;

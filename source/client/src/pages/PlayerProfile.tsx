@@ -15,34 +15,25 @@ import {
   Info,
   Layers,
   LockKeyhole,
+  MapPin,
   Pencil,
   Ruler,
   Scale,
   ShieldCheck,
   Target,
-  Trophy,
   Upload,
   UserRound,
 } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import type {
   Analysis,
   AnalysisMetric,
   Player,
   PlayerCard,
-  SkillValue,
   Video,
 } from "@shared/athlete";
+import type { DemoDisplay } from "@shared/demo-display";
 import { compareSessionCompatibility } from "@shared/evaluation";
+import { formatAcademyTenure } from "@shared/academy-tenure";
 import { ApiError, useApi, useAthlete } from "@/lib/athleteApi";
 import {
   Avatar,
@@ -52,17 +43,13 @@ import {
   Loading,
   PageHeading,
   Panel,
-  ScoreRing,
-  SkillBars,
   Tabs,
-  TrendChart,
   UploadModal,
   VideoLibrary,
 } from "@/components/athlete/UI";
-import { ProfileVideoStrip } from "@/components/athlete/ProfileVideoStrip";
+import { SkillCards } from "@/components/athlete/SkillCards";
 import PoseResults from "@/components/athlete/PoseResults";
 import EvaluationSummary, {
-  EvaluationFindingList,
   SessionMeasurementGrid,
   hasDocumentedOverall,
 } from "@/components/athlete/EvaluationSummary";
@@ -70,7 +57,15 @@ import SessionNotes from "@/components/athlete/SessionNotes";
 import ExercisePlans from "@/components/athlete/ExercisePlans";
 import HealthPanel from "@/components/athlete/HealthPanel";
 import PhysicalAssessments from "@/components/athlete/PhysicalAssessments";
-import { gymnasticsCategoryName, sportDefinition } from "@shared/sports";
+import {
+  CoachAssessmentPanel,
+  CoachOverview,
+} from "@/components/athlete/CoachAssessments";
+import {
+  apparatusName,
+  gymnasticsCategoryName,
+  sportDefinition,
+} from "@shared/sports";
 import "./athlete-pages.css";
 import "./player-reference.css";
 import "@/components/athlete/session-evaluation.css";
@@ -85,16 +80,29 @@ type ProfileTab =
   | "reports"
   | "health";
 
+type DisplayPlayer = Player & {
+  demoDisplay?: DemoDisplay;
+  primaryApparatus?: string;
+  demoProfileKey?: string;
+};
+
 const profileTabs: { id: ProfileTab; label: string }[] = [
   { id: "overview", label: "نظرة عامة" },
-  { id: "health", label: "الملف الصحي" },
   { id: "physical", label: "التحليل البدني" },
   { id: "motion", label: "التحليل الحركي" },
   { id: "skills", label: "المهارات" },
   { id: "comparison", label: "المقارنات" },
+  { id: "health", label: "الملف الصحي" },
   { id: "videos", label: "الفيديوهات" },
   { id: "reports", label: "التقارير" },
 ];
+
+function tabFromQuery(): ProfileTab | undefined {
+  const requested = new URLSearchParams(window.location.search).get("tab");
+  return profileTabs.some(tab => tab.id === requested)
+    ? (requested as ProfileTab)
+    : undefined;
+}
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
@@ -122,7 +130,7 @@ function documentedOverallText(player: Pick<PlayerCard, "evaluation">) {
   const overall = player.evaluation?.overall;
   return hasDocumentedOverall(player.evaluation)
     ? `${overall?.score?.toLocaleString("ar")} — ${overall?.method}`
-    : "لم يُقيّم";
+    : "لم تُقيّم بعد";
 }
 
 function SessionFollowUp({
@@ -352,61 +360,12 @@ function OverviewTab({
 }) {
   return (
     <div className="section-stack">
-      <div className="grid-3 profile-overview-grid">
-        <Panel title="التقييم العام" icon={Trophy} className="score-panel">
-          <EvaluationSummary
-            evaluation={player.evaluation}
-            kind="player"
-            includeFindings={false}
-          />
-        </Panel>
-        <Panel title="الجوانب التي تحتاج تطوير" icon={Target}>
-          <EvaluationFindingList
-            findings={player.evaluation?.development}
-            classification="development"
-            emptyReason="لا يوجد جانب تطوير يستوفي قاعدة تقييم موثقة. لا تُنشأ خطة عامة بديلة."
-          />
-        </Panel>
-        <Panel title="نقاط القوة" icon={CheckCircle2}>
-          <EvaluationFindingList
-            findings={player.evaluation?.strengths}
-            classification="strength"
-            emptyReason="لا توجد نقطة قوة تستوفي قاعدة تقييم موثقة في الجلسات المتاحة."
-          />
-        </Panel>
-      </div>
-      {/* Notes and training plans remain visible even after a session receives an evaluation. */}
+      <CoachOverview
+        player={player}
+        videos={videos}
+        onOpenVideos={onOpenVideos}
+      />
       <SessionFollowUp playerId={player.id} />
-      <div className="grid-2 profile-overview-lower">
-        <Panel title="تطور الأداء عبر الزمن" icon={Activity}>
-          <EmptyState
-            title="لا يوجد اتجاه موثق للمقارنة"
-            description="يعرض التطور بعد وجود جلستين متوافقتين في الطريقة والوحدة والمهارة والقدم وظروف الاختبار؛ لا تستخدم قيم الملف القديمة كبديل."
-          />
-        </Panel>
-        <Panel
-          title="أحدث الفيديوهات"
-          icon={ClipboardCheck}
-          actions={
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={onOpenVideos}
-            >
-              عرض الكل <ArrowLeft size={15} />
-            </button>
-          }
-        >
-          {videos.length ? (
-            <ProfileVideoStrip videos={videos} />
-          ) : (
-            <EmptyState
-              title="لا توجد فيديوهات موثقة"
-              description="ستظهر الفيديوهات المصرح بها هنا."
-            />
-          )}
-        </Panel>
-      </div>
       <details className="profile-latest-analysis">
         <summary>
           <BarChart3 aria-hidden="true" size={18} />
@@ -427,8 +386,28 @@ function PhysicalTab({
   player: Player;
   latestAnalysis?: Analysis;
 }) {
+  const demo = (player as DisplayPlayer).demoDisplay;
   return (
     <div className="section-stack">
+      {demo?.physicalTests.length ? (
+        <Panel title="أمثلة بدنية للعرض" icon={Dumbbell}>
+          <p className="privacy-note profile-demo-disclaimer">
+            مصدر العرض التجريبي فقط — هذه قيم مثال محفوظة وليست قياسات فعلية من
+            الذكاء الاصطناعي أو من تحليل الفيديو، ولا تدخل في تقييم اللاعب.
+          </p>
+          <div className="stats-grid physical-tests-grid profile-demo-grid">
+            {demo.physicalTests.map(test => (
+              <article className="stat-card" key={`${test.name}-${test.value}`}>
+                <span className="muted">{test.name}</span>
+                <strong>
+                  {test.value} <small>{test.unit}</small>
+                </strong>
+                <span className="badge">عرض تجريبي</span>
+              </article>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
       <Panel title="المؤشرات البدنية الموحّدة" icon={Dumbbell}>
         <PhysicalAssessments
           playerId={player.id}
@@ -475,20 +454,45 @@ function PhysicalTab({
   );
 }
 
-function MotionTab({ analyses }: { analyses: Analysis[] }) {
-  if (!analyses.length) {
-    return (
-      <>
+function MotionTab({
+  player,
+  analyses,
+}: {
+  player: Player;
+  analyses: Analysis[];
+}) {
+  const demo = (player as DisplayPlayer).demoDisplay;
+  return (
+    <div className="section-stack">
+      {demo?.motionIndicators.length ? (
+        <Panel title="مؤشرات حركة توضيحية" icon={Activity}>
+          <p className="privacy-note profile-demo-disclaimer">
+            مصدر العرض التجريبي فقط — لا تمثل هذه الأمثلة قياس Pose فعليًا أو
+            نتيجة ذكاء اصطناعي للاعب. تظهر نتائج Pose الموثقة من المقاطع أدناه
+            عند توفرها.
+          </p>
+          <div className="stats-grid profile-demo-grid">
+            {demo.motionIndicators.map(indicator => (
+              <article
+                className="stat-card"
+                key={`${indicator.name}-${indicator.unit}`}
+              >
+                <span className="muted">{indicator.name}</span>
+                <strong>
+                  {formatNumber(indicator.value)} <small>{indicator.unit}</small>
+                </strong>
+                <span className="badge">عرض تجريبي</span>
+              </article>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
+      {!analyses.length ? (
         <EmptyState
           title="لا توجد تحليلات حركية مسجلة"
           description="ستظهر زوايا المفاصل والملاحظات عند توفر تحليل فيديو معتمد."
         />
-      </>
-    );
-  }
-
-  return (
-    <div className="section-stack">
+      ) : null}
       {analyses.map(analysis => {
         const isPoseResult = Boolean(analysis.pose && !analysis.isDemo);
         const isSimulation =
@@ -529,14 +533,32 @@ function MotionTab({ analyses }: { analyses: Analysis[] }) {
   );
 }
 
-function SkillsTab({ analyses }: { analyses: Analysis[] }) {
+function SkillsTab({
+  player,
+  analyses,
+}: {
+  player: Player;
+  analyses: Analysis[];
+}) {
+  const demo = (player as DisplayPlayer).demoDisplay;
   const evaluated = analyses.filter(analysis => Boolean(analysis.evaluation));
   return (
     <div className="section-stack">
+      <CoachAssessmentPanel player={player} />
+      {demo?.skills.length ? (
+        <Panel title="ملفات المهارات التجريبية" icon={Target}>
+          <p className="privacy-note profile-demo-disclaimer">
+            مصدر العرض التجريبي فقط — بطاقات مهارة محفوظة للعرض وليست قياسات Pose
+            أو معيارًا علميًا. افتح ملف المهارة لعرض مصدر المقطع والتمارين
+            وأبعاد التقييم التوضيحية.
+          </p>
+          <SkillCards player={player} skills={demo.skills} />
+        </Panel>
+      ) : null}
       <Panel title="المهارات المختبرة" icon={Target}>
         <p className="helper">
-          لا تظهر هنا درجات ملف يدوية أو افتراضية. المهارة تعد مختبرة فقط عند
-          وجود جلسة تحفظ القياس وطريقته.
+          القياسات التالية تخص جلسات تحليل حركي موثقة. تقييمات المدرب المسجلة
+          تظهر أعلاه بمصدرها وتاريخها، ولا تُنشأ درجات بديلة عند غياب أي منهما.
         </p>
         {evaluated.length ? (
           <div className="session-measurement-grid">
@@ -750,7 +772,8 @@ function ComparisonTab({
         </label>
         {otherPlayerId ? (
           <p className="evaluation-no-rule">
-            لم يُقيّم: لا توجد مقارنة جلسات متعددة اللاعبين موثقة في هذا المسار.
+            لم تُقيّم بعد: لا توجد مقارنة جلسات متعددة اللاعبين موثقة في هذا
+            المسار.
           </p>
         ) : null}
       </Panel>
@@ -848,17 +871,17 @@ function ReportsTab({ player }: { player: Player }) {
 
 export default function PlayerProfile({ id }: { id?: string }) {
   const { organization, session } = useAthlete();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const providedId = id && /^\d+$/.test(id) ? Number(id) : undefined;
   const invalidId = Boolean(id && !providedId);
   const [chosenId, setChosenId] = useState<number | undefined>(providedId);
-  const [tab, setTab] = useState<ProfileTab>("overview");
+  const [tab, setTab] = useState<ProfileTab>(() => tabFromQuery() ?? "overview");
   const playersQuery = useApi<PlayerCard[]>("/players");
 
   useEffect(() => {
     setChosenId(providedId);
-    setTab("overview");
-  }, [providedId]);
+    setTab(tabFromQuery() ?? "overview");
+  }, [location, providedId]);
 
   const playerId = providedId ?? chosenId;
   const profileQuery = useApi<Player>(
@@ -933,12 +956,12 @@ export default function PlayerProfile({ id }: { id?: string }) {
             <div>
               <strong>لا تملك صلاحية الاطلاع على التفاصيل الكاملة للاعب</strong>
               <p>
-                يمكن للنادي استكشاف المواهب وطلب الوصول إلى ملف اللاعب قبل عرض
+                يمكن للنادي مراجعة الأندية وطلب الوصول إلى ملف اللاعب قبل عرض
                 التحليلات والفيديوهات.
               </p>
               <div className="inline-actions">
                 <a className="btn btn-primary" href="/clubs">
-                  استكشاف المواهب
+                  استكشاف الأندية
                 </a>
                 <a className="btn btn-outline" href="/requests">
                   طلبات الوصول
@@ -966,6 +989,7 @@ export default function PlayerProfile({ id }: { id?: string }) {
     );
 
   const player = profileQuery.data;
+  const displayPlayer = player as DisplayPlayer;
   const isVideoSample = player.isDemo && player.age === 0;
   const relatedLoading = analysesQuery.isLoading || videosQuery.isLoading;
   const relatedError = analysesQuery.error ?? videosQuery.error;
@@ -1001,10 +1025,10 @@ export default function PlayerProfile({ id }: { id?: string }) {
         content = <HealthPanel playerId={player.id} />;
         break;
       case "motion":
-        content = <MotionTab analyses={analyses} />;
+        content = <MotionTab player={player} analyses={analyses} />;
         break;
       case "skills":
-        content = <SkillsTab analyses={analyses} />;
+        content = <SkillsTab player={player} analyses={analyses} />;
         break;
       case "comparison":
         content = (
@@ -1089,11 +1113,6 @@ export default function PlayerProfile({ id }: { id?: string }) {
         <div className="profile-details-grid">
           <DetailItem
             icon={UserRound}
-            label="العمر"
-            value={isVideoSample ? "غير منسوب" : `${player.age} سنة`}
-          />
-          <DetailItem
-            icon={UserRound}
             label="الفئة العمرية"
             value={
               isVideoSample
@@ -1133,15 +1152,22 @@ export default function PlayerProfile({ id }: { id?: string }) {
             value={sportDefinition(player.sport).name}
           />
           <DetailItem
-            icon={UserRound}
-            label="الموقع"
-            value={isVideoSample ? "غير منسوب" : player.region || "غير محدد"}
+            icon={MapPin}
+            label="المنطقة"
+            value={isVideoSample ? "غير منسوبة" : player.region || "غير محددة"}
           />
           {player.sport === "gymnastics" && player.gymnasticsCategory ? (
             <DetailItem
               icon={Layers}
               label="فئة الجمباز"
-              value={gymnasticsCategoryName(player.gymnasticsCategory)}
+              value={`${player.gymnasticsCategory === "womens_artistic" ? "WAG" : "MAG"} · ${gymnasticsCategoryName(player.gymnasticsCategory)}`}
+            />
+          ) : null}
+          {player.sport === "gymnastics" && displayPlayer.primaryApparatus ? (
+            <DetailItem
+              icon={Target}
+              label="الجهاز الأساسي"
+              value={apparatusName(displayPlayer.primaryApparatus)}
             />
           ) : null}
           <DetailItem
@@ -1149,7 +1175,22 @@ export default function PlayerProfile({ id }: { id?: string }) {
             label="تاريخ الميلاد"
             value={isVideoSample ? "غير منسوب" : formatDate(player.birthDate)}
           />
+          <DetailItem
+            icon={CalendarDays}
+            label="تاريخ الانضمام للأكاديمية"
+            value={
+              player.academyJoinDate
+                ? formatDate(player.academyJoinDate)
+                : "لم يُحدد تاريخ الانضمام"
+            }
+          />
+          <DetailItem
+            icon={CalendarDays}
+            label="مدة الانضمام"
+            value={formatAcademyTenure(player.academyJoinDate)}
+          />
         </div>
+        <p className="helper">مدة الانضمام مدة تقويمية وليست عدد أيام الحضور.</p>
       </Panel>
       <Tabs
         items={profileTabs}

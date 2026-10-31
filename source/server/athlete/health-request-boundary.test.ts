@@ -69,8 +69,10 @@ function headers(organizationId = 11): HeadersInit {
 
 const healthPayload = {
   previousInjuries: "إصابة سابقة في أربطة الكاحل الأيسر",
+  chronicDiseases: "لا توجد أمراض مزمنة مسجلة",
   currentMedications: "لا يوجد",
   physiotherapy: "جلسة أسبوعية لمدة ستة أسابيع",
+  availableExams: "تقرير أشعة للكاحل بتاريخ 2026-09-15",
   otherNotes: "حساسية موثقة من إسفنج الملعب",
 };
 
@@ -125,6 +127,8 @@ describe("isolated sensitive athlete data boundaries", () => {
     expect(body.profile).toMatchObject({
       playerId: 101,
       previousInjuries: healthPayload.previousInjuries,
+      chronicDiseases: healthPayload.chronicDiseases,
+      availableExams: healthPayload.availableExams,
       updatedByName: "مالك أكاديمية الاختبار",
     });
     expect(body.access.scopes).toEqual({ health: true, emergency: false });
@@ -142,8 +146,12 @@ describe("isolated sensitive athlete data boundaries", () => {
       headers: headers(),
     });
     expect(readBack.status).toBe(200);
-    expect((await readBack.json()).profile.currentMedications).toBe(
+    const readBackBody = await readBack.json();
+    expect(readBackBody.profile.currentMedications).toBe(
       healthPayload.currentMedications
+    );
+    expect(readBackBody.profile.availableExams).toBe(
+      healthPayload.availableExams
     );
 
     // The audit trail records field names, never their values.

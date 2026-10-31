@@ -32,6 +32,8 @@ export type PlayerCard = {
   sport: SportId;
   /** Empty for sports without artistic categories. */
   gymnasticsCategory: GymnasticsCategoryId | "";
+  /** Empty/omitted for football; server-validated against a gymnastics category. */
+  primaryApparatus?: string;
   academyName: string;
   name: string;
   age: number;
@@ -41,6 +43,8 @@ export type PlayerCard = {
   height: number;
   weight: number;
   region: string;
+  /** Empty when the academy has not recorded this historical date. */
+  academyJoinDate?: string;
   photoKey: string;
   overall: number;
   improvement: number;
@@ -48,7 +52,12 @@ export type PlayerCard = {
   discoverable: boolean;
   lastAnalysis: string | null;
   isDemo?: boolean;
+  /** Server-issued only; never accepted from public player input. */
+  demoProfileKey?: string;
+  /** Saved-assessment-derived display metadata for fictitious demo profiles only. */
+  demoDisplay?: import("./demo-display").DemoDisplay;
   evaluation?: import("./evaluation-types").PlayerEvaluation;
+  coachAssessment?: import("./coaching").CoachAssessmentSummary;
   demoArchived?: boolean;
 };
 export type PhysicalTest = { name: string; value: string; unit: string };
@@ -64,6 +73,8 @@ export type PlayerInput = {
   name: string;
   sport: SportId;
   gymnasticsCategory?: GymnasticsCategoryId | "";
+  /** Editable only for gymnastics and constrained to the selected category. */
+  primaryApparatus?: string;
   age: number;
   nationality: string;
   position: string;
@@ -71,6 +82,7 @@ export type PlayerInput = {
   height: number;
   weight: number;
   birthDate: string;
+  academyJoinDate?: string;
   jersey: number;
   region: string;
   discoverable: boolean;
@@ -113,6 +125,9 @@ export type Video = {
   latestAnalysisMethod?: "simulation" | "pose" | null;
   analysisAt?: string | null;
   source?: VideoSource | null;
+  /** Optional verified demo-media metadata; uploads cannot set either field. */
+  durationSeconds?: number | null;
+  posterKey?: string | null;
 };
 export type AnalysisMetric = {
   name: string;
@@ -167,8 +182,9 @@ export type Report = {
   analyses: Analysis[];
   videos: Video[];
   notes: Note[];
+  coachAssessments?: import("./coaching").CoachAssessment[];
   comparisonHistory?: HistoryPoint[];
-  isDemo: true;
+  isDemo: boolean;
 };
 export const DEMO_LABEL = "بيانات تجريبية — ليست تحليل ذكاء اصطناعي فعلي";
 export const MAX_VIDEO_BYTES = 10 * 1024 * 1024;

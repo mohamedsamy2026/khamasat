@@ -16,39 +16,43 @@ import {
 } from "./sports";
 
 describe("sport configuration registry", () => {
-  it("registers football and gymnastics without touching football vocabulary", () => {
+  it("preserves legacy vocabulary and adds wing sides and goalkeeper skills", () => {
     expect(Object.keys(SPORTS).sort()).toEqual(["football", "gymnastics"]);
     expect(FOOTBALL.groups.map(group => group.name)).toEqual([
       "مهاجم",
       "وسط",
       "مدافع",
       "جناح",
+      "جناح أيمن",
+      "جناح أيسر",
       "حارس مرمى",
     ]);
     expect(skillsForSport("football")).toContain("التسديد");
-    expect(skillsForSport("football")).toHaveLength(8);
+    expect(skillsForSport("football")).toContain("التصدي");
+    expect(skillsForSport("football")).toContain("التعامل مع الكرات العالية");
+    expect(FOOTBALL.skills).toHaveLength(16);
     expect(isSportId("gymnastics")).toBe(true);
     expect(isSportId("swimming")).toBe(false);
   });
 
   it("uses the exact women's apparatus rotation order", () => {
     expect(apparatusOrderForCategory("womens_artistic")).toEqual([
-      "floor",
       "vault",
-      "balance_beam",
       "uneven_bars",
+      "balance_beam",
+      "floor",
     ]);
     expect(
       apparatusForCategory("womens_artistic").map(apparatus => apparatus.id)
-    ).toEqual(["floor", "vault", "balance_beam", "uneven_bars"]);
+    ).toEqual(["vault", "uneven_bars", "balance_beam", "floor"]);
   });
 
   it("uses the exact men's apparatus rotation order", () => {
     expect(apparatusOrderForCategory("mens_artistic")).toEqual([
       "floor",
-      "vault",
       "pommel_horse",
       "rings",
+      "vault",
       "parallel_bars",
       "horizontal_bar",
     ]);
@@ -56,11 +60,11 @@ describe("sport configuration registry", () => {
       apparatusForCategory("mens_artistic").map(apparatus => apparatus.name)
     ).toEqual([
       "الحركات الأرضية",
-      "القفز",
-      "حصان المقابض",
-      "الحلقات",
-      "المتوازيان",
-      "العارضة الأفقية",
+      "حصان الحلق",
+      "الحلق",
+      "طاولة القفز",
+      "المتوازي",
+      "العقلة",
     ]);
   });
 
@@ -128,7 +132,7 @@ describe("sport configuration registry", () => {
     // The client records the apparatus name as the session skill; the server
     // rejects a skill outside the sport, so these lists must stay in sync.
     for (const apparatus of GYMNASTICS_APPARATUS)
-      expect(GYMNASTICS.skills).toContain(apparatus.name);
+      expect(skillsForSport("gymnastics")).toContain(apparatus.name);
     const names = GYMNASTICS_APPARATUS.map(item => item.name);
     expect(new Set(names).size).toBe(names.length);
   });

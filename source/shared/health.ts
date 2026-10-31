@@ -16,8 +16,10 @@ export const SENSITIVE_SCOPE_LABELS: Record<SensitiveScope, string> = {
 
 export const HEALTH_FIELD_LIMITS = {
   previousInjuries: 2000,
+  chronicDiseases: 2000,
   currentMedications: 2000,
   physiotherapy: 2000,
+  availableExams: 2000,
   otherNotes: 2000,
 } as const;
 
@@ -32,8 +34,10 @@ export const EMERGENCY_CONTACT_LIMITS = {
 export type HealthProfile = {
   playerId: number;
   previousInjuries: string;
+  chronicDiseases: string;
   currentMedications: string;
   physiotherapy: string;
+  availableExams: string;
   otherNotes: string;
   updatedByName: string;
   updatedAt: string;

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MAX_VIDEO_BYTES, PLAYER_LIMITS } from "../../shared/athlete";
+import { calendarToday, isValidCalendarDate } from "../../shared/academy-tenure";
 import {
   ALL_SKILLS,
   GYMNASTICS_CATEGORIES,
@@ -11,6 +12,8 @@ import {
   type GymnasticsCategoryId,
   type SportId,
 } from "../../shared/sports";
+import { isAcceptedFootballSkill } from "../../shared/sports/football";
+import { isAcceptedGymnasticsSkill } from "../../shared/sports/gymnastics";
 import {
   EMERGENCY_CONTACT_LIMITS,
   HEALTH_FIELD_LIMITS,
@@ -33,9 +36,13 @@ export const skillName = z
   .trim()
   .min(1)
   .max(80)
-  .refine(value => ALL_SKILLS.includes(value), {
-    message: "المهارة المحددة غير مسجلة في إعدادات الرياضات",
-  });
+  .refine(
+    value =>
+      ALL_SKILLS.includes(value) ||
+      isAcceptedFootballSkill(value) ||
+      isAcceptedGymnasticsSkill(value),
+    { message: "المهارة المحددة غير مسجلة في إعدادات الرياضات" }
+  );
 /** Any registered sport group; the route then enforces the athlete's sport. */
 export const position = z
   .string()
@@ -73,6 +80,24 @@ export const isoDate = z
     },
     { message: "التاريخ غير صالح" }
   );
+/**
+ * Validates a player's academy start date without guessing missing dates.
+ * Returns null for an omitted date, or an Arabic message for an invalid date.
+ */
+export function validateAcademyJoinDate(
+  academyJoinDate: string | null | undefined,
+  birthDate: string | null | undefined
+): string | null {
+  if (!academyJoinDate) return null;
+  if (!isValidCalendarDate(academyJoinDate))
+    return "تاريخ الانضمام غير صالح";
+  if (academyJoinDate > calendarToday())
+    return "تاريخ الانضمام لا يمكن أن يكون في المستقبل";
+  if (birthDate && isValidCalendarDate(birthDate) && academyJoinDate < birthDate)
+    return "تاريخ الانضمام لا يمكن أن يسبق تاريخ الميلاد";
+  return null;
+}
+
 export const isoDateTime = z
   .string()
   .trim()
@@ -134,6 +159,7 @@ export const playerInputSchema = z
       .union([gymnasticsCategoryId, z.literal("")])
       .optional()
       .default(""),
+    primaryApparatus: trimmed(0, 40).optional().default(""),
     age: z.number().int().min(PLAYER_LIMITS.age.min).max(PLAYER_LIMITS.age.max),
     nationality: trimmed(2, 80),
     position,
@@ -149,6 +175,7 @@ export const playerInputSchema = z
       .min(PLAYER_LIMITS.weight.min)
       .max(PLAYER_LIMITS.weight.max),
     birthDate: z.union([z.literal(""), isoDate]),
+    academyJoinDate: z.union([z.literal(""), isoDate]).optional(),
     jersey: z
       .number()
       .int()
@@ -182,6 +209,16 @@ export const playerInputSchema = z
             message: "فئة اللاعب لا تتوافق مع الفئة المختارة",
           });
         }
+        if (
+          input.primaryApparatus &&
+          (!category || !category.apparatusOrder.includes(input.primaryApparatus))
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: ["primaryApparatus"],
+            message: "الجهاز الرئيسي لا يتوافق مع فئة الجمباز المختارة",
+          });
+        }
       }
     } else {
       if (input.gymnasticsCategory) {
@@ -191,6 +228,13 @@ export const playerInputSchema = z
           message: "فئة الجمباز لا تُستخدم مع رياضة أخرى",
         });
       }
+      if (input.primaryApparatus) {
+        context.addIssue({
+          code: "custom",
+          path: ["primaryApparatus"],
+          message: "الجهاز الرئيسي يُستخدم فقط مع رياضة الجمباز",
+        });
+      }
       if (!groupsForSport(input.sport).includes(input.position)) {
         context.addIssue({
           code: "custom",
@@ -198,6 +242,17 @@ export const playerInputSchema = z
           message: "المركز المحدد لا يتبع الرياضة المختارة",
         });
       }
+    }
+    const academyJoinDateError = validateAcademyJoinDate(
+      input.academyJoinDate,
+      input.birthDate
+    );
+    if (academyJoinDateError) {
+      context.addIssue({
+        code: "custom",
+        path: ["academyJoinDate"],
+        message: academyJoinDateError,
+      });
     }
     if (!input.birthDate) return;
     const birth = new Date(`${input.birthDate}T00:00:00.000Z`);
@@ -550,7 +605,7 @@ export const reportQuerySchema = z
   });
 
 export const exportQuerySchema = reportQuerySchema.safeExtend({
-  format: z.enum(["html", "csv"]),
+  format: z.enum(["html", "csv", "pdf"]),
 });
 
 const indicatorValueSchema = z
@@ -574,7 +629,7 @@ export const physicalAssessmentInputSchema = z
     sessionKey: z
       .string()
       .trim()
-      .regex(/^as_[a-z0-9]{6,32}$/, "معرّف جلسة التقييم غير صالح")
+      .regex(/^as\_[a-z0-9]{6,32}$/, "معرّف جلسة التقييم غير صالح")
       .optional(),
     recordedAt: isoDateTime.optional(),
     indicators: z.array(indicatorValueSchema).min(1).max(40),
@@ -614,13 +669,62 @@ export const healthInputSchema = z.object({
   previousInjuries: trimmed(0, HEALTH_FIELD_LIMITS.previousInjuries).default(
     ""
   ),
+  chronicDiseases: trimmed(0, HEALTH_FIELD_LIMITS.chronicDiseases).default(""),
   currentMedications: trimmed(
     0,
     HEALTH_FIELD_LIMITS.currentMedications
   ).default(""),
   physiotherapy: trimmed(0, HEALTH_FIELD_LIMITS.physiotherapy).default(""),
+  availableExams: trimmed(0, HEALTH_FIELD_LIMITS.availableExams).default(""),
   otherNotes: trimmed(0, HEALTH_FIELD_LIMITS.otherNotes).default(""),
 });
+
+
+const coachAssessmentSkillSchema = z.object({
+  name: skillName,
+  score: z.number().finite().min(0).max(100).nullable(),
+});
+
+const coachExerciseSchema = z.object({
+  title: trimmed(1, 200),
+  description: trimmed(1, 1000),
+});
+
+/**
+ * The authenticated route derives player identity, author, demo flag, and
+ * overall score; clients cannot submit or override those fields.
+ */
+export const coachAssessmentInputSchema = z
+  .object({
+    assessedAt: isoDateTime,
+    protocol: trimmed(1, 160),
+    notes: trimmed(0, 2000).default(""),
+    skills: z.array(coachAssessmentSkillSchema).min(1).max(40),
+    strengths: z.array(trimmed(1, 300)).max(20).default([]),
+    development: z.array(trimmed(1, 300)).max(20).default([]),
+    exercises: z.array(coachExerciseSchema).max(20).default([]),
+  })
+  .strict()
+  .superRefine((input, context) => {
+    if (!input.skills.some(skill => skill.score !== null)) {
+      context.addIssue({
+        code: "custom",
+        path: ["skills"],
+        message: "سجّل تقدير مدرب واحدًا على الأقل؛ اترك غير المقيم null",
+      });
+    }
+    const names = new Set<string>();
+    for (const [index, skill] of input.skills.entries()) {
+      if (names.has(skill.name)) {
+        context.addIssue({
+          code: "custom",
+          path: ["skills", index, "name"],
+          message: "لا تكرر المهارة نفسها في تقييم المدرب",
+        });
+      }
+      names.add(skill.name);
+    }
+  });
 
 const phoneNumber = z
   .string()

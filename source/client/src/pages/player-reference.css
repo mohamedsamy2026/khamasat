@@ -302,6 +302,59 @@
   padding: 15px 22px 21px;
 }
 
+.player-profile-page .profile-overview-videos-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.player-profile-page .profile-latest-coach-notes {
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.player-profile-page .profile-latest-coach-notes .panel-head {
+  padding: 19px 22px 0;
+}
+
+.player-profile-page .profile-latest-coach-notes .panel-head h2 {
+  color: #062d29;
+  font-size: 21px;
+}
+
+.player-profile-page .profile-latest-coach-notes .panel-icon {
+  width: 34px;
+  height: 34px;
+  color: var(--profile-green);
+  background: #e9f9f1;
+}
+
+.player-profile-page .profile-latest-coach-notes .panel-body {
+  padding: 16px 22px 22px;
+}
+
+.player-profile-page .profile-coach-note {
+  display: grid;
+  gap: 13px;
+  padding: 17px 18px;
+  border: 1px solid #dcece5;
+  border-radius: 13px;
+  background: #f7fcf9;
+}
+
+.player-profile-page .profile-coach-note p {
+  margin: 0;
+  color: #163d34;
+  font-size: 17px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.player-profile-page .profile-coach-note footer {
+  color: #557068;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
 .player-profile-page .profile-overview-lower .panel-head .btn {
   min-height: auto;
   padding: 2px 0;
@@ -581,7 +634,8 @@
   }
 
   .player-profile-page .profile-overview-grid .panel-head h2,
-  .player-profile-page .profile-overview-lower .panel-head h2 {
+  .player-profile-page .profile-overview-lower .panel-head h2,
+  .player-profile-page .profile-latest-coach-notes .panel-head h2 {
     font-size: 18px;
   }
 
@@ -609,4 +663,65 @@
   overflow: visible;
   text-overflow: clip;
   line-height: 1.5;
+}
+
+/* Saved demo display records are visually distinct from measured/Pose data. */
+.player-profile-page .profile-demo-disclaimer {
+  align-items: flex-start;
+  margin: 0 0 15px;
+  padding: 11px 13px;
+  border: 1px solid #ead9a8;
+  border-radius: 10px;
+  color: #755d27;
+  background: #fffaf0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.player-profile-page .profile-demo-grid .stat-card {
+  position: relative;
+  min-height: 114px;
+}
+
+.player-profile-page .profile-demo-grid .stat-card .badge {
+  position: absolute;
+  bottom: 11px;
+  inset-inline-start: 11px;
+  padding: 2px 7px;
+  color: #77602a;
+  border-color: #eadbb7;
+  background: #fff8e8;
+  font-size: 11px;
+}
+
+.player-profile-page .coach-summary-grid.profile-overview-grid {
+  direction: rtl;
+}
+
+.player-profile-page .coach-overview-lower {
+  direction: ltr;
+  gap: 14px;
+}
+
+.player-profile-page .coach-overview-lower > .panel {
+  direction: rtl;
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.player-profile-page .coach-latest-panel {
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+@media (min-width: 1181px) {
+  .player-profile-page .profile-details-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .player-profile-page .coach-overview-lower {
+    grid-template-columns: 1fr;
+  }
 }

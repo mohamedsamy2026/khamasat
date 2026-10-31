@@ -32,18 +32,24 @@ type RegulatoryMeResponse = {
 };
 
 export default function Home() {
-  const { session, enterDemo, loading, error, invalidate } = useAthlete();
+  const { session, enterDemo, setOrgId, loading, error, invalidate } =
+    useAthlete();
   const [, navigate] = useLocation();
   const [entering, setEntering] = useState<EntryType | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const isBusy = loading || entering !== null;
 
-  const enterDemoSpace = async (type: DemoType) => {
+  const enterDemoSpace = async (type: DemoType, destination?: string) => {
     if (isBusy) return;
     setEntering(type);
     try {
-      await enterDemo(type);
-      navigate(type === "academy" ? "/academies" : "/clubs");
+      if (session?.user) {
+        const membership = session.memberships.find(item => item.type === type);
+        if (membership) setOrgId(membership.organizationId);
+      } else {
+        await enterDemo(type);
+      }
+      navigate(destination ?? (type === "academy" ? "/academies" : "/clubs"));
     } catch (problem) {
       toast.error(
         problem instanceof Error ? problem.message : "تعذر فتح مساحة العرض"
@@ -128,17 +134,41 @@ export default function Home() {
     <main className="athlete-landing" dir="rtl">
       <div className="landing-stage" id="top">
         <header className="landing-header">
-          <Link href="/" className="landing-brand" aria-label="ATHLETE AI الرئيسية">
+          <Link
+            href="/"
+            className="landing-brand"
+            aria-label="ATHLETE AI الرئيسية"
+          >
             <img src="/brand/mark.png" alt="" aria-hidden="true" />
-            <span dir="ltr">ATHLETE <strong>AI</strong></span>
+            <span dir="ltr">
+              ATHLETE <strong>AI</strong>
+            </span>
           </Link>
 
-          <nav className={`landing-navigation ${menuOpen ? "is-open" : ""}`} aria-label="التنقل الرئيسي">
-            <a className="is-current" href="#top" onClick={() => setMenuOpen(false)}>الرئيسية</a>
-            <a href="#platform" onClick={() => setMenuOpen(false)}>عن المنصة</a>
+          <nav
+            className={`landing-navigation ${menuOpen ? "is-open" : ""}`}
+            aria-label="التنقل الرئيسي"
+          >
+            <a
+              className="is-current"
+              href="#top"
+              onClick={() => setMenuOpen(false)}
+            >
+              الرئيسية
+            </a>
+            <a href="#platform" onClick={() => setMenuOpen(false)}>
+              عن المنصة
+            </a>
+            <a href="#features" onClick={() => setMenuOpen(false)}>
+              المميزات
+            </a>
           </nav>
 
-          <button type="button" className="landing-header-login" onClick={openAccount}>
+          <button
+            type="button"
+            className="landing-header-login"
+            onClick={openAccount}
+          >
             <Users size={18} strokeWidth={1.7} aria-hidden="true" />
             {session?.user ? "دخول حسابي" : "تسجيل الدخول"}
           </button>
@@ -158,7 +188,10 @@ export default function Home() {
           <div className="landing-hero-image" aria-hidden="true" />
           <div className="landing-hero-shade" aria-hidden="true" />
           <div className="landing-hero-copy">
-            <div className="landing-eyebrow"><span />منصة رياضية متكاملة</div>
+            <div className="landing-eyebrow">
+              <span />
+              منصة رياضية متكاملة
+            </div>
             <h1 id="landing-main-title">
               <span>حيث تبدأ</span>
               <span className="landing-gradient-text">رحلة الأبطال</span>
@@ -168,14 +201,22 @@ export default function Home() {
               <br className="landing-desktop-break" /> وربط الأكاديميات بالأندية
             </p>
             <div className="landing-promise">
-              <ChartNoAxesCombined size={22} strokeWidth={1.8} aria-hidden="true" />
+              <ChartNoAxesCombined
+                size={22}
+                strokeWidth={1.8}
+                aria-hidden="true"
+              />
               <span>رؤية أعمق. تطور مستمر.</span>
             </div>
           </div>
         </section>
 
         <div className="landing-body">
-          <section className="landing-spaces" id="platform" aria-label="مساحات العمل في المنصة">
+          <section
+            className="landing-spaces"
+            id="platform"
+            aria-label="مساحات العمل في المنصة"
+          >
             <div className="landing-primary-cards">
               <button
                 type="button"
@@ -185,12 +226,25 @@ export default function Home() {
                 aria-busy={entering === "academy"}
               >
                 <span className="landing-card-number">01</span>
-                <GraduationCap className="landing-card-watermark" size={150} strokeWidth={0.65} aria-hidden="true" />
+                <GraduationCap
+                  className="landing-card-watermark"
+                  size={150}
+                  strokeWidth={0.65}
+                  aria-hidden="true"
+                />
                 <span className="landing-card-content">
                   <span className="landing-card-heading">الأكاديميات</span>
-                  <span className="landing-card-desc">إدارة الرياضيين وتحليل الأداء<br />ومتابعة التطور</span>
+                  <span className="landing-card-desc">
+                    إدارة الرياضيين وتحليل الأداء
+                    <br />
+                    ومتابعة التطور
+                  </span>
                   <span className="landing-card-cta">
-                    {entering === "academy" ? <Loader2 className="landing-spin" size={17} /> : <ArrowLeft size={18} />}
+                    {entering === "academy" ? (
+                      <Loader2 className="landing-spin" size={17} />
+                    ) : (
+                      <ArrowLeft size={18} />
+                    )}
                     دخول الأكاديميات
                   </span>
                 </span>
@@ -204,12 +258,25 @@ export default function Home() {
                 aria-busy={entering === "club"}
               >
                 <span className="landing-card-number">02</span>
-                <Shield className="landing-card-watermark" size={160} strokeWidth={0.65} aria-hidden="true" />
+                <Shield
+                  className="landing-card-watermark"
+                  size={160}
+                  strokeWidth={0.65}
+                  aria-hidden="true"
+                />
                 <span className="landing-card-content">
                   <span className="landing-card-heading">الأندية</span>
-                  <span className="landing-card-desc">اكتشاف المواهب<br />واستقطاب الرياضيين</span>
+                  <span className="landing-card-desc">
+                    اكتشاف المواهب
+                    <br />
+                    واستقطاب الرياضيين
+                  </span>
                   <span className="landing-card-cta">
-                    {entering === "club" ? <Loader2 className="landing-spin" size={17} /> : <ArrowLeft size={18} />}
+                    {entering === "club" ? (
+                      <Loader2 className="landing-spin" size={17} />
+                    ) : (
+                      <ArrowLeft size={18} />
+                    )}
                     دخول الأندية
                   </span>
                 </span>
@@ -223,16 +290,26 @@ export default function Home() {
               disabled={isBusy}
               aria-busy={entering === "ministry"}
             >
-              <span className="landing-ministry-icon"><Landmark size={24} strokeWidth={1.5} aria-hidden="true" /></span>
+              <span className="landing-ministry-icon">
+                <Landmark size={24} strokeWidth={1.5} aria-hidden="true" />
+              </span>
               <span className="landing-ministry-text">
                 <strong>الجهات التنظيمية</strong>
                 <span>الإشراف على الأكاديميات والتراخيص والتقارير</span>
               </span>
-              {entering === "ministry" ? <Loader2 className="landing-spin" size={19} /> : <ArrowLeft size={21} />}
+              {entering === "ministry" ? (
+                <Loader2 className="landing-spin" size={19} />
+              ) : (
+                <ArrowLeft size={21} />
+              )}
             </button>
           </section>
 
-          <section className="landing-features" id="features" aria-label="مميزات المنصة">
+          <section
+            className="landing-features"
+            id="features"
+            aria-label="مميزات المنصة"
+          >
             {features.map(feature => {
               const Icon = feature.icon;
               return (
@@ -249,7 +326,10 @@ export default function Home() {
 
           <div className="landing-access" aria-live="polite">
             {loading || entering ? (
-              <span role="status"><Loader2 className="landing-spin" size={16} /> جارٍ تهيئة مساحة العمل...</span>
+              <span role="status">
+                <Loader2 className="landing-spin" size={16} /> جارٍ تهيئة مساحة
+                العمل...
+              </span>
             ) : session?.user ? (
               <button type="button" onClick={() => navigate("/academies")}>
                 فتح مساحة {session.user.name || "حسابك"} <ArrowLeft size={16} />
@@ -259,10 +339,20 @@ export default function Home() {
                 <LockKeyhole size={15} /> تسجيل الدخول للبيانات الحقيقية
               </button>
             )}
-            <p>نسخة العرض التجريبية تحتوي بيانات افتراضية؛ البيانات الحقيقية محمية بتسجيل الدخول.</p>
-            <small>* التقييمات التجريبية افتراضية أو مُدخلة يدويًا، ولا تُستخرج من الفيديو. نتائج الرؤية الحاسوبية تعرض الزوايا ثنائية الأبعاد فقط.</small>
+            <p>
+              نسخة العرض التجريبية تحتوي بيانات افتراضية؛ البيانات الحقيقية
+              محمية بتسجيل الدخول.
+            </p>
+            <small>
+              * التقييمات التجريبية افتراضية أو مُدخلة يدويًا، ولا تُستخرج من
+              الفيديو. نتائج الرؤية الحاسوبية تعرض الزوايا ثنائية الأبعاد فقط.
+            </small>
             {Boolean(error) && (
-              <button className="landing-retry" type="button" onClick={() => void invalidate()}>
+              <button
+                className="landing-retry"
+                type="button"
+                onClick={() => void invalidate()}
+              >
                 تعذر التحقق من الجلسة — إعادة المحاولة
               </button>
             )}
@@ -270,7 +360,11 @@ export default function Home() {
         </div>
 
         <footer className="landing-footer">
-          <a href="#top" className="landing-footer-brand" aria-label="العودة لأعلى الصفحة">
+          <a
+            href="#top"
+            className="landing-footer-brand"
+            aria-label="العودة لأعلى الصفحة"
+          >
             <img src="/brand/mark.png" alt="" aria-hidden="true" />
             <span dir="ltr">ATHLETE AI</span>
             <small>مستقبل الرياضة يبدأ من هنا</small>

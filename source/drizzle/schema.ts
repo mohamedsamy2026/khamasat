@@ -28,6 +28,7 @@ import type {
   NoteRevision,
   SessionEvaluation,
 } from "../shared/evaluation-types";
+import type { CoachAssessment } from "../shared/coaching";
 
 /** Core user table backing the existing Manus OAuth flow. */
 export const users = mysqlTable("users", {
@@ -284,6 +285,10 @@ export const players = mysqlTable(
       .$type<GymnasticsCategoryId | "">()
       .notNull()
       .default(""),
+    /** Optional selected apparatus, validated from the player's category server-side. */
+    primaryApparatus: varchar("primaryApparatus", { length: 40 }),
+    /** Seed-only opaque key; public player input can never supply it. */
+    demoProfileKey: varchar("demoProfileKey", { length: 80 }),
     age: int("age").notNull(),
     nationality: varchar("nationality", { length: 80 }).notNull(),
     position: varchar("position", { length: 40 }).notNull(),
@@ -292,6 +297,8 @@ export const players = mysqlTable(
     weight: double("weight").notNull(),
     region: varchar("region", { length: 120 }).notNull(),
     birthDate: varchar("birthDate", { length: 10 }).notNull().default(""),
+    /** Null for legacy/unknown profiles; never inferred from another timestamp. */
+    academyJoinDate: varchar("academyJoinDate", { length: 10 }),
     jersey: int("jersey").notNull(),
     photoKey: varchar("photoKey", { length: 255 }).notNull().default(""),
     overall: double("overall").notNull().default(0),
@@ -401,6 +408,10 @@ export const videos = mysqlTable(
     mime: varchar("mime", { length: 30 }).notNull(),
     /** Optional provenance for this uploaded video; it is never player identity data. */
     source: json("source").$type<VideoSource | null>(),
+    /** Verified checked-in demo asset key; absent for ordinary private uploads. */
+    demoAssetKey: varchar("demoAssetKey", { length: 160 }),
+    durationSeconds: int("durationSeconds"),
+    posterKey: varchar("posterKey", { length: 255 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [
@@ -594,10 +605,16 @@ export const playerHealthProfiles = mysqlTable("player_health_profiles", {
   previousInjuries: varchar("previousInjuries", { length: 2000 })
     .notNull()
     .default(""),
+  chronicDiseases: varchar("chronicDiseases", { length: 2000 })
+    .notNull()
+    .default(""),
   currentMedications: varchar("currentMedications", { length: 2000 })
     .notNull()
     .default(""),
   physiotherapy: varchar("physiotherapy", { length: 2000 })
+    .notNull()
+    .default(""),
+  availableExams: varchar("availableExams", { length: 2000 })
     .notNull()
     .default(""),
   otherNotes: varchar("otherNotes", { length: 2000 }).notNull().default(""),
@@ -720,6 +737,42 @@ export const playerPhysicalAssessments = mysqlTable(
       table.playerId,
       table.sport,
       table.apparatus
+    ),
+  ]
+);
+
+/**
+ * Append-only, human-authored assessment records. The displayed overall is
+ * persisted only after the server derives it from non-null submitted scores.
+ */
+export const coachAssessments = mysqlTable(
+  "coach_assessments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    playerId: int("playerId")
+      .notNull()
+      .references(() => players.id, { onDelete: "cascade" }),
+    coachName: varchar("coachName", { length: 160 }).notNull(),
+    coachPhotoKey: varchar("coachPhotoKey", { length: 255 })
+      .notNull()
+      .default(""),
+    assessedAt: timestamp("assessedAt").notNull(),
+    protocol: varchar("protocol", { length: 160 }).notNull(),
+    notes: varchar("notes", { length: 2000 }).notNull().default(""),
+    skills: json("skills").$type<CoachAssessment["skills"]>().notNull(),
+    overall: double("overall"),
+    strengths: json("strengths").$type<string[]>().notNull(),
+    development: json("development").$type<string[]>().notNull(),
+    exercises: json("exercises")
+      .$type<CoachAssessment["exercises"]>()
+      .notNull(),
+    isDemo: boolean("isDemo").notNull().default(false),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("coach_assessments_player_assessed_idx").on(
+      table.playerId,
+      table.assessedAt
     ),
   ]
 );

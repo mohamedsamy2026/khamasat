@@ -13,17 +13,17 @@ const GYM_INDICATOR_SOURCE =
  * section: it is configuration, not a performance standard.
  */
 export const WOMENS_APPARATUS_ORDER = [
-  "floor",
   "vault",
-  "balance_beam",
   "uneven_bars",
+  "balance_beam",
+  "floor",
 ] as const;
 
 export const MENS_APPARATUS_ORDER = [
   "floor",
-  "vault",
   "pommel_horse",
   "rings",
+  "vault",
   "parallel_bars",
   "horizontal_bar",
 ] as const;
@@ -38,7 +38,7 @@ export const GYMNASTICS_APPARATUS: readonly ApparatusDefinition[] = [
   },
   {
     id: "vault",
-    name: "القفز",
+    name: "طاولة القفز",
     englishName: "Vault",
     description:
       "اقتراب سريع ثم ارتداد على لوح القفز ومرور فوق المنصة وانتهاء بالهبوط.",
@@ -51,34 +51,34 @@ export const GYMNASTICS_APPARATUS: readonly ApparatusDefinition[] = [
   },
   {
     id: "uneven_bars",
-    name: "العارضتان غير المتوازيتين",
+    name: "المتوازي مختلف الارتفاعات",
     englishName: "Uneven Bars",
     description:
       "انتقالات ودورات بين عارضتين بارتفاعين مختلفين مع ثبات الكتف والجذع.",
   },
   {
     id: "pommel_horse",
-    name: "حصان المقابض",
+    name: "حصان الحلق",
     englishName: "Pommel Horse",
     description:
       "دورات وانتقالات على المقابض تعتمد على ثبات الكتف وقوة دفع الذراعين.",
   },
   {
     id: "rings",
-    name: "الحلقات",
+    name: "الحلق",
     englishName: "Rings",
     description:
       "ثباتات وقوى على حلقتين معلقتين تتطلب قوة عالية وتحكمًا في الجسم كاملًا.",
   },
   {
     id: "parallel_bars",
-    name: "المتوازيان",
+    name: "المتوازي",
     englishName: "Parallel Bars",
     description: "دعم وثباتات وانتقالات على عارضتين متوازيتين.",
   },
   {
     id: "horizontal_bar",
-    name: "العارضة الأفقية",
+    name: "العقلة",
     englishName: "Horizontal Bar",
     description: "دورات وانتقالات معلقًا على عارضة أفقية واحدة.",
   },
@@ -319,6 +319,52 @@ export const GYMNASTICS_INDICATORS: readonly StrengthIndicator[] = [
   ),
 ];
 
+/**
+ * Technical labels used for new assessment/display flows. They are coaching
+ * rubric dimensions, not FIG values or scientific performance standards.
+ * Duplicate movement names (for example "النزول") intentionally remain in
+ * the apparatus-specific catalog in demo-display.ts; this sport-wide union is
+ * de-duplicated only for generic legacy-compatible input validation.
+ */
+export const GYMNASTICS_CANONICAL_SKILLS = [
+  "الحركات الأرضية",
+  "الوقوف على اليدين",
+  "الهبوط",
+  "الاقتراب والارتقاء",
+  "الدفع على طاولة القفز",
+  "هبوط القفز",
+  "التوازن على العارضة",
+  "الوثب على العارضة",
+  "النزول من العارضة",
+  "المرجحة",
+  "الانتقال بين العارضتين",
+  "النزول",
+  "الدوران",
+  "المقص",
+  "الثبات",
+  "المرجحة على المتوازي",
+  "الوقوف على اليدين على المتوازي",
+  "النزول من المتوازي",
+  "التحرير وإعادة المسك",
+] as const;
+
+/** Former apparatus labels accepted only when reading or extending old records. */
+export const GYMNASTICS_HISTORIC_SKILLS = [
+  "القفز",
+  "العارضتان غير المتوازيتين",
+  "حصان المقابض",
+  "الحلقات",
+  "المتوازيان",
+  "العارضة الأفقية",
+] as const;
+
+export function isAcceptedGymnasticsSkill(skill: string): boolean {
+  return (
+    (GYMNASTICS_CANONICAL_SKILLS as readonly string[]).includes(skill) ||
+    (GYMNASTICS_HISTORIC_SKILLS as readonly string[]).includes(skill)
+  );
+}
+
 export const GYMNASTICS: SportDefinition = {
   id: "gymnastics",
   name: "الجمباز الفني",
@@ -335,21 +381,13 @@ export const GYMNASTICS: SportDefinition = {
     id: category.name,
     name: category.name,
   })),
-  skills: [
-    "الحركات الأرضية",
-    "القفز",
-    "عارضة التوازن",
-    "العارضتان غير المتوازيتين",
-    "حصان المقابض",
-    "الحلقات",
-    "المتوازيان",
-    "العارضة الأفقية",
-  ],
+  skills: GYMNASTICS_CANONICAL_SKILLS,
   indicators: GYMNASTICS_INDICATORS,
   apparatus: GYMNASTICS_APPARATUS,
   categories: GYMNASTICS_CATEGORIES,
   notes: [
     "ترتيب الأجهزة في الواجهة يتبع ترتيب الدوران المعتمد للفئة المختارة.",
+    "تعرض الشاشات الجديدة مهارات فنية مخصصة للجهاز؛ تبقى أسماء الأجهزة التاريخية مقبولة للسجلات القديمة فقط.",
     "المؤشرات مسودة عمل بانتظار المراجعة العلمية، ولا تحوي عتبات درجات.",
   ],
 };

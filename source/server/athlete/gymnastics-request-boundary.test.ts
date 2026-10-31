@@ -76,23 +76,23 @@ describe("gymnastics section request boundaries", () => {
     expect(response.status).toBe(200);
     const context = await response.json();
     expect(context.category).toBe("womens_artistic");
-    expect(context.apparatusOrder).toEqual([
-      "floor",
-      "vault",
-      "balance_beam",
-      "uneven_bars",
-    ]);
+ expect(context.apparatusOrder).toEqual([
+  "vault",
+  "uneven_bars",
+  "balance_beam",
+  "floor",
+]);
     expect(
       context.apparatus.map((item: { id: string; order: number }) => [
         item.id,
         item.order,
       ])
     ).toEqual([
-      ["floor", 1],
-      ["vault", 2],
-      ["balance_beam", 3],
-      ["uneven_bars", 4],
-    ]);
+  ["vault", 1],
+  ["uneven_bars", 2],
+  ["balance_beam", 3],
+  ["floor", 4],
+]);
     expect(context.apparatus.map((item: { id: string }) => item.id)).not.toContain(
       "pommel_horse"
     );

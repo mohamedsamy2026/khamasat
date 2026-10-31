@@ -17,9 +17,15 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import type { Video } from "@shared/athlete";
+import type { Player, Video } from "@shared/athlete";
 import { MAX_VIDEO_BYTES, SKILLS } from "@shared/athlete";
-import { downloadPrivate, uploadVideo, useAthlete } from "@/lib/athleteApi";
+import { skillsForPlayer } from "@shared/coaching";
+import {
+  downloadPrivate,
+  uploadVideo,
+  useApi,
+  useAthlete,
+} from "@/lib/athleteApi";
 import { toast } from "sonner";
 import "./skill-videos.css";
 
@@ -294,7 +300,18 @@ export function SkillVideoLibrary({
   showFilters?: boolean;
   ModalComponent: VideoModalComponent;
 }) {
-  const { orgId } = useAthlete();
+  const { orgId, session } = useAthlete();
+  const sessionScope = session?.user
+    ? `member:${session.user.id}:${session.memberships
+        .map(m => `${m.organizationId}:${m.role}`)
+        .sort()
+        .join(",")}`
+    : session?.mode === "demo"
+      ? `demo:${session.memberships
+          .map(m => m.organizationId)
+          .sort()
+          .join(",")}`
+      : "anonymous";
   const scope = useRef(0);
   const [selected, setSelected] = useState<SkillVideo | null>(null);
   const [url, setUrl] = useState<string | null>(null);
@@ -305,7 +322,7 @@ export function SkillVideoLibrary({
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const videoKey = videos.map(video => video.id).join(",");
-  const scopeKey = `${orgId ?? "none"}:${playerId ?? "collection"}`;
+  const scopeKey = `${sessionScope}:${orgId ?? "none"}:${playerId ?? "collection"}`;
 
   useEffect(() => {
     scope.current += 1;
@@ -320,7 +337,7 @@ export function SkillVideoLibrary({
     return () => {
       scope.current += 1;
     };
-  }, [orgId, playerId]);
+  }, [scopeKey]);
 
   useEffect(
     () => () => {
@@ -614,6 +631,11 @@ export function SkillVideoUploadModal({
   demoBadge?: ReactNode;
 }) {
   const { invalidate } = useAthlete();
+  const playerQuery = useApi<Player>(`/players/${playerId}`);
+  const player = playerQuery.data;
+  const availableSkills = player
+    ? skillsForPlayer(player.sport, player.position)
+    : [];
   const [drafts, setDrafts] = useState<UploadDraft[]>([]);
   const [uploading, setUploading] = useState(false);
   const [batchMessage, setBatchMessage] = useState("");
@@ -632,7 +654,7 @@ export function SkillVideoUploadModal({
       id: `${file.name}-${file.lastModified}-${index}-${crypto.randomUUID()}`,
       file,
       title: titleFromFilename(file.name),
-      skill: SKILLS[0],
+      skill: availableSkills[0] ?? "",
       recordedAt: today,
       phase: "ready" as const,
       progress: 0,
@@ -761,7 +783,7 @@ export function SkillVideoUploadModal({
             type="file"
             accept="video/mp4,video/webm,.mp4,.webm"
             multiple
-            disabled={uploading}
+            disabled={uploading || !availableSkills.length}
             onChange={event => {
               addFiles(event.target.files);
               event.currentTarget.value = "";
@@ -827,7 +849,7 @@ export function SkillVideoUploadModal({
                           })
                         }
                       >
-                        {SKILLS.map(skill => (
+                        {availableSkills.map(skill => (
                           <option key={skill}>{skill}</option>
                         ))}
                       </select>

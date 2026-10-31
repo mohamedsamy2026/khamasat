@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChartNoAxesCombined,
   CheckCircle2,
   FileChartColumn,
-  Filter,
   GraduationCap,
   Loader2,
   Pencil,
@@ -23,13 +22,14 @@ import type {
   Player,
   PlayerCard,
   PlayerInput,
-  SkillValue,
   Video,
 } from "@shared/athlete";
 import { PLAYER_LIMITS } from "@shared/athlete";
+import { calendarToday, formatAcademyTenure } from "@shared/academy-tenure";
 import {
   DEFAULT_SPORT,
   GYMNASTICS_CATEGORIES,
+  apparatusForCategory,
   gymnasticsCategoryName,
   isGymnasticsCategoryId,
   isSportId,
@@ -43,24 +43,51 @@ import {
   DemoBadge,
   EmptyState,
   ErrorState,
-  Improvement,
   Loading,
   Modal,
   PageHeading,
   Panel,
-  ScoreRing,
   Tabs,
   TextLink,
-  TrendChart,
   UploadModal,
   VideoLibrary,
 } from "@/components/athlete/UI";
 import { hasDocumentedOverall } from "@/components/athlete/EvaluationSummary";
+import "./directory.css";
 
 /** Sports the organization actually operates; football is the safe default. */
 function configuredSports(sports: readonly string[] | undefined): SportId[] {
   const list = (sports ?? []).filter(isSportId);
   return list.length ? list : [DEFAULT_SPORT];
+}
+
+function playerMatchesDirectoryFacet(
+  player: PlayerCard,
+  sport: SportId,
+  gymnasticsCategory: GymnasticsCategoryId,
+  facet: string
+) {
+  if (sport === "football") return !facet || player.position === facet;
+  if (player.gymnasticsCategory !== gymnasticsCategory) return false;
+  return !facet || player.primaryApparatus === facet;
+}
+
+function gymnasticsCategoryCode(category: GymnasticsCategoryId | "") {
+  if (category === "womens_artistic") return "WAG";
+  if (category === "mens_artistic") return "MAG";
+  return "فئة غير محددة";
+}
+
+function gymnasticsDirectoryLabel(player: PlayerCard) {
+  if (player.sport !== "gymnastics") return player.position;
+  const category = gymnasticsCategoryCode(player.gymnasticsCategory);
+  const apparatus =
+    player.primaryApparatus && player.gymnasticsCategory
+      ? (apparatusForCategory(player.gymnasticsCategory).find(
+          item => item.id === player.primaryApparatus
+        )?.name ?? player.primaryApparatus)
+      : "الجهاز غير محدد";
+  return `${category} · ${apparatus}`;
 }
 
 function PlayerEditor({
@@ -79,11 +106,21 @@ function PlayerEditor({
           nationality: player.nationality,
           sport: player.sport,
           gymnasticsCategory: player.gymnasticsCategory,
+          primaryApparatus:
+            player.sport === "gymnastics"
+              ? (player.primaryApparatus ?? "")
+              : "",
           position: player.position,
-          foot: player.foot,
+          foot:
+            player.foot === "أيمن"
+              ? "اليمنى"
+              : player.foot === "أيسر"
+                ? "اليسرى"
+                : player.foot,
           height: player.height,
           weight: player.weight,
           birthDate: player.birthDate.slice(0, 10),
+          academyJoinDate: player.academyJoinDate ?? "",
           jersey: player.jersey,
           region: player.region,
           discoverable: player.discoverable,
@@ -99,12 +136,23 @@ function PlayerEditor({
           // Defaults to the organization's first configured sport; the server
           // rejects any sport the organization does not operate.
           sport: organization?.sports?.[0] ?? DEFAULT_SPORT,
-          gymnasticsCategory: "",
-          position: "",
-          foot: "",
+          gymnasticsCategory:
+            (organization?.sports?.[0] ?? DEFAULT_SPORT) === "gymnastics"
+              ? "womens_artistic"
+              : "",
+          primaryApparatus: "",
+          position:
+            (organization?.sports?.[0] ?? DEFAULT_SPORT) === "gymnastics"
+              ? gymnasticsCategoryName("womens_artistic")
+              : "",
+          foot:
+            (organization?.sports?.[0] ?? DEFAULT_SPORT) === "gymnastics"
+              ? "لا ينطبق"
+              : "",
           height: 0,
           weight: 0,
           birthDate: "",
+          academyJoinDate: "",
           jersey: 0,
           region: "",
           discoverable: true,
@@ -119,6 +167,13 @@ function PlayerEditor({
   const [error, setError] = useState("");
   const availableSports = configuredSports(organization?.sports);
   const definition = sportDefinition(form.sport);
+  const today = calendarToday();
+  const academyTenure = formatAcademyTenure(form.academyJoinDate, today);
+  const apparatusOptions =
+    form.sport === "gymnastics" &&
+    isGymnasticsCategoryId(form.gymnasticsCategory)
+      ? apparatusForCategory(form.gymnasticsCategory)
+      : [];
   // A sport switch invalidates sport-specific vocabulary; never carry a
   // football position into gymnastics (the server re-validates this too).
   const changeSport = (next: SportId) => {
@@ -132,6 +187,7 @@ function PlayerEditor({
             ? prev.gymnasticsCategory
             : "womens_artistic"
           : "",
+      primaryApparatus: "",
       // Gymnastics stores the category name as the athlete's group, so the
       // position must follow the category selection.
       position:
@@ -141,7 +197,7 @@ function PlayerEditor({
                 ? prev.gymnasticsCategory
                 : "womens_artistic"
             )
-          : (groups[0]?.id ?? ""),
+          : (groups[0]?.name ?? ""),
       // The column is required; a gymnast has no preferred kicking foot.
       foot: next === "football" ? prev.foot : "لا ينطبق",
     }));
@@ -273,17 +329,42 @@ function PlayerEditor({
                       ...prev,
                       gymnasticsCategory: next as GymnasticsCategoryId,
                       position: gymnasticsCategoryName(next),
+                      primaryApparatus: apparatusForCategory(next).some(
+                        apparatus => apparatus.id === prev.primaryApparatus
+                      )
+                        ? prev.primaryApparatus
+                        : "",
                     }));
                   }}
                 >
                   {GYMNASTICS_CATEGORIES.map(category => (
                     <option key={category.id} value={category.id}>
-                      {category.name}
+                      {gymnasticsCategoryCode(category.id)} · {category.name}
                     </option>
                   ))}
                 </select>
                 <small className="muted">
                   تحدد الفئة أجهزة اللاعب وترتيبها في قسم الجمباز.
+                </small>
+              </label>
+            ) : null}
+            {form.sport === "gymnastics" ? (
+              <label className="field">
+                الجهاز الأساسي
+                <select
+                  value={form.primaryApparatus ?? ""}
+                  onChange={e => change("primaryApparatus", e.target.value)}
+                >
+                  <option value="">الجهاز غير محدد</option>
+                  {apparatusOptions.map(apparatus => (
+                    <option key={apparatus.id} value={apparatus.id}>
+                      {apparatus.name}
+                    </option>
+                  ))}
+                </select>
+                <small className="muted">
+                  لا تظهر إلا أجهزة الفئة المختارة. يظل اللاعب بلا جهاز أساسي إن
+                  لم يُحدَّد اختيار.
                 </small>
               </label>
             ) : null}
@@ -296,7 +377,9 @@ function PlayerEditor({
               >
                 <option value="">اختر {definition.terminology.group}</option>
                 {definition.groups.map(group => (
-                  <option key={group.id}>{group.id}</option>
+                  <option key={group.id} value={group.name}>
+                    {group.name}
+                  </option>
                 ))}
               </select>
             </label>
@@ -346,6 +429,21 @@ function PlayerEditor({
                 max={new Date().toISOString().slice(0, 10)}
                 onChange={e => change("birthDate", e.target.value)}
               />
+            </label>
+            <label className="field">
+              تاريخ الانضمام للأكاديمية
+              <input
+                type="date"
+                aria-label="تاريخ الانضمام للأكاديمية"
+                required
+                value={form.academyJoinDate ?? ""}
+                min={form.birthDate || undefined}
+                max={today}
+                onChange={e => change("academyJoinDate", e.target.value)}
+              />
+              <small className="muted">
+                {academyTenure} · مدة تقويمية وليست عدد أيام الحضور.
+              </small>
             </label>
             <label className="field">
               رقم اللاعب
@@ -474,24 +572,35 @@ export default function Academies() {
   const { organization, session, setOrgId, orgId } = useAthlete();
   const isAcademy = organization?.type === "academy";
   const isDemo = session?.mode === "demo";
-  const availableSports = configuredSports(organization?.sports);
   const playersQuery = useApi<PlayerCard[]>("/players", isAcademy);
   const players = playersQuery.data ?? [];
   const [search, setSearch] = useState("");
-  const [sportFilter, setSportFilter] = useState<SportId | "">("");
-  const filterDefinition = sportDefinition(sportFilter || DEFAULT_SPORT);
-  const [position, setPosition] = useState("");
+  const [sportFilter, setSportFilter] = useState<SportId>("football");
+  const [gymnasticsCategory, setGymnasticsCategory] =
+    useState<GymnasticsCategoryId>("womens_artistic");
+  const [facet, setFacet] = useState("");
   const [age, setAge] = useState("");
-  const [level, setLevel] = useState("");
-  const [tab, setTab] = useState("all");
-  const [moreFilters, setMoreFilters] = useState(false);
+  const [region, setRegion] = useState("");
   const [editor, setEditor] = useState(false);
   const [editing, setEditing] = useState<Player | null>(null);
   const [uploadPlayer, setUploadPlayer] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
-  const firstQuery = useApi<Player>(
-    `/players/${players[0]?.id ?? 0}`,
-    isAcademy && !!players[0]
+  const regions = useMemo(
+    () =>
+      [
+        ...new Set(
+          players
+            .filter(
+              player =>
+                player.sport === sportFilter &&
+                (sportFilter !== "gymnastics" ||
+                  player.gymnasticsCategory === gymnasticsCategory)
+            )
+            .map(player => player.region)
+            .filter(Boolean)
+        ),
+      ].sort(),
+    [gymnasticsCategory, players, sportFilter]
   );
   const media = useQuery({
     queryKey: [
@@ -569,22 +678,57 @@ export default function Academies() {
     return (
       <ErrorState error={playersQuery.error} retry={playersQuery.refetch} />
     );
-  const filtered = players.filter(
-    p =>
-      (!search || `${p.name} ${p.position}`.includes(search)) &&
-      (!sportFilter || p.sport === sportFilter) &&
-      (!position || p.position === position) &&
-      (!age || (p.age > 0 && (age === "u16" ? p.age < 16 : p.age >= 16))) &&
-      (!level ||
-        (level === "documented"
-          ? hasDocumentedOverall(p.evaluation)
-          : !hasDocumentedOverall(p.evaluation)))
-  );
-  const athleteProfiles = players.filter(p => p.age > 0);
-  const documentedProfiles = athleteProfiles.filter(player =>
+  const facetOptions =
+    sportFilter === "football"
+      ? sportDefinition("football").groups.map(group => ({
+          id: group.name,
+          label: group.name,
+        }))
+      : apparatusForCategory(gymnasticsCategory).map(apparatus => ({
+          id: apparatus.id,
+          label: apparatus.name,
+        }));
+  const normalizedSearch = search.trim().toLocaleLowerCase("ar-SA");
+  const filtered = players.filter(player => {
+    const searchValues = [
+      player.name,
+      player.position,
+      player.academyName,
+      player.region,
+      player.gymnasticsCategory
+        ? gymnasticsCategoryName(player.gymnasticsCategory)
+        : "",
+      player.primaryApparatus && player.gymnasticsCategory
+        ? (apparatusForCategory(player.gymnasticsCategory).find(
+            apparatus => apparatus.id === player.primaryApparatus
+          )?.name ?? player.primaryApparatus)
+        : "",
+    ];
+    const matchesSearch =
+      !normalizedSearch ||
+      searchValues.some(value =>
+        value.toLocaleLowerCase("ar-SA").includes(normalizedSearch)
+      );
+    const matchesAge =
+      !age ||
+      (age === "u16" ? player.age > 0 && player.age < 16 : player.age >= 16);
+    return (
+      matchesSearch &&
+      player.sport === sportFilter &&
+      matchesAge &&
+      (!region || player.region === region) &&
+      playerMatchesDirectoryFacet(
+        player,
+        sportFilter,
+        gymnasticsCategory,
+        facet
+      )
+    );
+  });
+  const documentedProfiles = players.filter(player =>
     hasDocumentedOverall(player.evaluation)
   );
-  const documentedSessions = athleteProfiles.reduce(
+  const documentedSessions = players.reduce(
     (sum, player) => sum + (player.evaluation?.sessionsCount ?? 0),
     0
   );
@@ -614,8 +758,8 @@ export default function Academies() {
           </span>
           <div>
             <small>عدد اللاعبين</small>
-            <strong>{athleteProfiles.length}</strong>
-            <em>ملفات لاعبين · عينات الفيديو منفصلة</em>
+            <strong>{players.length}</strong>
+            <em>كل صف ظاهر في قائمة اللاعبين محسوب هنا</em>
           </div>
         </div>
         <div className="stat-card">
@@ -657,113 +801,137 @@ export default function Academies() {
           </div>
         </div>
       </div>
-      <Panel>
-        <Tabs
-          items={[
-            { id: "all", label: "جميع اللاعبين" },
-            { id: "age", label: "حسب الفئة العمرية" },
-            { id: "level", label: "حسب المستوى" },
-            { id: "skill", label: "حسب المهارة والمركز" },
-          ]}
-          value={tab}
-          onChange={id => {
-            setTab(id);
-            if (id === "age") setAge("u16");
-            else setAge("");
-            if (id === "level") setLevel("high");
-            else setLevel("");
-          }}
-        />
-        <div className="filters">
-          <div className="search-field">
-            <Search size={15} />
+      <Panel title="دليل اللاعبين" icon={Search}>
+        <div className="directory-toolbar">
+          <label className="search-field directory-search">
+            <Search size={16} />
             <input
               aria-label="البحث عن لاعب"
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="البحث عن لاعب…"
+              onChange={event => setSearch(event.target.value)}
+              placeholder="البحث بالاسم أو المنطقة أو المركز"
             />
-          </div>
-          <select
-            aria-label="الرياضة"
-            value={sportFilter}
-            onChange={e => {
-              setSportFilter(isSportId(e.target.value) ? e.target.value : "");
-              setPosition("");
-            }}
+          </label>
+          <div
+            className="directory-sport-filter"
+            role="group"
+            aria-label="تصفية الرياضة"
           >
-            <option value="">جميع الرياضات</option>
-            {availableSports.map(id => (
-              <option key={id} value={id}>
-                {sportDefinition(id).name}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label={filterDefinition.terminology.group}
-            value={position}
-            onChange={e => setPosition(e.target.value)}
-          >
-            <option value="">جميع {filterDefinition.terminology.groups}</option>
-            {filterDefinition.groups.map(group => (
-              <option key={group.id}>{group.id}</option>
-            ))}
-          </select>
-          <select
-            aria-label="حالة التقييم"
-            value={level}
-            onChange={e => setLevel(e.target.value)}
-          >
-            <option value="">كل حالات التقييم</option>
-            <option value="documented">تقييم عام موثق</option>
-            <option value="unassessed">لم يُقيّم</option>
-          </select>
-          <select
-            aria-label="الفئة العمرية"
-            value={age}
-            onChange={e => setAge(e.target.value)}
-          >
-            <option value="">جميع الفئات العمرية</option>
-            <option value="u16">أقل من 16 سنة</option>
-            <option value="over16">16 سنة فأكثر</option>
-          </select>
-          <button
-            className="btn btn-outline"
-            onClick={() => setMoreFilters(v => !v)}
-          >
-            <Filter size={15} />
-            {moreFilters ? "إغلاق الفلاتر" : "المزيد من الفلاتر"}
-          </button>
-        </div>
-        {moreFilters && (
-          <div className="notice-box">
-            <Filter size={17} />
-            <span>نتائج مطابقة: {filtered.length} لاعب</span>
             <button
-              className="btn btn-sm btn-ghost"
+              className={sportFilter === "football" ? "is-active" : ""}
+              type="button"
               onClick={() => {
-                setSearch("");
-                setAge("");
-                setPosition("");
-                setLevel("");
-                setSportFilter("");
-                setTab("all");
+                setSportFilter("football");
+                setGymnasticsCategory("womens_artistic");
+                setFacet("");
+                setRegion("");
               }}
             >
-              إعادة ضبط جميع الفلاتر
+              كرة القدم
+            </button>
+            <span aria-hidden="true">|</span>
+            <button
+              className={sportFilter === "gymnastics" ? "is-active" : ""}
+              type="button"
+              onClick={() => {
+                setSportFilter("gymnastics");
+                setGymnasticsCategory("womens_artistic");
+                setFacet("");
+                setRegion("");
+              }}
+            >
+              الجمباز
             </button>
           </div>
-        )}
+          {sportFilter === "gymnastics" ? (
+            <label className="directory-filter-field">
+              <span>الفئة الرياضية</span>
+              <select
+                aria-label="الفئة الرياضية"
+                value={gymnasticsCategory}
+                onChange={event => {
+                  setGymnasticsCategory(
+                    event.target.value as GymnasticsCategoryId
+                  );
+                  setFacet("");
+                  setRegion("");
+                }}
+              >
+                <option value="womens_artistic">WAG · سيدات</option>
+                <option value="mens_artistic">MAG · رجال</option>
+              </select>
+            </label>
+          ) : null}
+          <label className="directory-filter-field">
+            <span>العمر</span>
+            <select
+              aria-label="العمر"
+              value={age}
+              onChange={event => setAge(event.target.value)}
+            >
+              <option value="">كل الأعمار</option>
+              <option value="u16">أقل من 16 سنة</option>
+              <option value="over16">16 سنة فأكثر</option>
+            </select>
+          </label>
+          <label className="directory-filter-field">
+            <span>المنطقة</span>
+            <select
+              aria-label="المنطقة"
+              value={region}
+              onChange={event => setRegion(event.target.value)}
+            >
+              <option value="">كل المناطق</option>
+              {regions.map(item => (
+                <option value={item} key={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="directory-filter-field">
+            <span>{sportFilter === "football" ? "المركز" : "الجهاز"}</span>
+            <select
+              aria-label={sportFilter === "football" ? "المركز" : "الجهاز"}
+              value={facet}
+              onChange={event => setFacet(event.target.value)}
+            >
+              <option value="">
+                {sportFilter === "football" ? "كل المراكز" : "كل الأجهزة"}
+              </option>
+              {facetOptions.map(option => (
+                <option value={option.id} key={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="btn btn-ghost directory-reset"
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setAge("");
+              setRegion("");
+              setFacet("");
+              setGymnasticsCategory("womens_artistic");
+            }}
+          >
+            إعادة الضبط
+          </button>
+        </div>
         {filtered.length ? (
           <div className="table-wrap">
-            <table className="data-table">
+            <table className="data-table directory-player-table">
               <thead>
                 <tr>
                   <th>اللاعب</th>
                   <th>العمر</th>
-                  <th>الرياضة</th>
-                  <th>المركز / الفئة</th>
-                  <th>التقييم العام</th>
+                  <th>
+                    {sportFilter === "football" ? "المركز" : "الفئة · الجهاز"}
+                  </th>
+                  <th>المنطقة</th>
+                  <th>التقييم المسجل</th>
                   <th>الجلسات الموثقة</th>
                   <th>آخر تحليل</th>
                   <th>الإجراءات</th>
@@ -771,37 +939,47 @@ export default function Academies() {
               </thead>
               <tbody>
                 {filtered.map(p => (
-                  <tr key={p.id}>
-                    <td>
+                  <tr key={p.id} data-player-id={p.id}>
+                    <td data-label="اللاعب">
                       <Link href={`/players/${p.id}`} className="player-cell">
                         <Avatar player={p} />
                         <span>
                           <strong>{p.name}</strong>
-                          <small>{p.academyName}</small>
+                          <small>
+                            {p.sport === "gymnastics"
+                              ? `${p.academyName} · ${gymnasticsCategoryCode(p.gymnasticsCategory)}`
+                              : p.academyName}
+                          </small>
                         </span>
                       </Link>
                     </td>
-                    <td>
-                      {p.isDemo && p.age === 0 ? "غير منسوب" : `${p.age} سنة`}
+                    <td data-label="العمر">
+                      {p.age > 0 ? `${p.age} سنة` : "غير متاح"}
                     </td>
-                    <td>{sportDefinition(p.sport).name}</td>
-                    <td>
-                      {p.sport === "gymnastics" && p.gymnasticsCategory
-                        ? `${p.position} · ${gymnasticsCategoryName(p.gymnasticsCategory)}`
-                        : p.position}
+                    <td
+                      data-label={
+                        sportFilter === "football" ? "المركز" : "الفئة · الجهاز"
+                      }
+                    >
+                      {gymnasticsDirectoryLabel(p)}
                     </td>
-                    <td>
+                    <td data-label="المنطقة">{p.region || "—"}</td>
+                    <td data-label="التقييم المسجل">
                       <span className="score-tag">
-                        {hasDocumentedOverall(p.evaluation)
-                          ? `${p.evaluation?.overall.score?.toLocaleString("ar")} — ${p.evaluation?.overall.method}`
-                          : "لم يُقيّم"}
+                        {p.coachAssessment?.overall != null
+                          ? `${p.coachAssessment.overall.toLocaleString("ar")} / 100 — تقييم مدرب`
+                          : hasDocumentedOverall(p.evaluation)
+                            ? `${p.evaluation?.overall.score?.toLocaleString("ar")} — ${p.evaluation?.overall.method}`
+                            : "لم تُقيّم بعد"}
                       </span>
                     </td>
-                    <td>{p.evaluation?.sessionsCount ?? 0}</td>
-                    <td className="muted" dir="ltr">
+                    <td data-label="الجلسات الموثقة">
+                      {p.evaluation?.sessionsCount ?? 0}
+                    </td>
+                    <td className="muted" dir="ltr" data-label="آخر تحليل">
                       {p.lastAnalysis?.slice(0, 10) || "—"}
                     </td>
-                    <td>
+                    <td data-label="الإجراءات">
                       <div className="row-actions">
                         <Link
                           href={`/players/${p.id}`}
@@ -854,7 +1032,7 @@ export default function Academies() {
             description={
               players.length
                 ? "جرّب تغيير البحث أو الفلاتر."
-                : "أنشئ ملفًا افتراضيًا، ثم أضف فيديوهات وقياسات تجريبية."
+                : "أنشئ ملف اللاعب الأول ثم أضف الفيديوهات والقياسات المسجلة."
             }
           />
         )}
@@ -886,7 +1064,7 @@ export default function Academies() {
         <Panel title="تغطية التقييم الموثق" icon={TrendingUp}>
           <div className="small-kpi">
             <strong style={{ fontSize: 28, color: "#0d8a5b" }}>
-              {documentedProfiles.length} / {athleteProfiles.length}
+              {documentedProfiles.length} / {players.length}
             </strong>
             <p className="helper">
               ملفات تحوي درجة عامة مع طريقة حساب موثقة. لا يحسب هذا القسم

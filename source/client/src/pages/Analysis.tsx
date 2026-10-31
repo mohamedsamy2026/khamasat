@@ -19,8 +19,10 @@ import type {
   PlayerCard,
   Video,
 } from "@shared/athlete";
-import { DEMO_LABEL, SKILLS } from "@shared/athlete";
+import { DEMO_LABEL } from "@shared/athlete";
+import { skillsForPlayer } from "@shared/coaching";
 import type { PoseProgress } from "@shared/pose";
+import { ACADEMY_TENURE_NOTE, calendarToday, formatAcademyTenure } from "@shared/academy-tenure";
 import { MAX_POSE_SECONDS } from "@shared/pose";
 import { api, downloadPrivate, useApi, useAthlete } from "@/lib/athleteApi";
 import { analyzeVideo } from "@/lib/poseEngine";
@@ -55,7 +57,19 @@ function initialSelection() {
 
 export default function Analysis() {
   const initial = useMemo(initialSelection, []);
-  const { organization, orgId, session, invalidate } = useAthlete();
+  const { organization, orgId, session, invalidate } =
+    useAthlete();
+  const sessionScope = session?.user
+    ? `member:${session.user.id}:${session.memberships
+        .map(m => `${m.organizationId}:${m.role}`)
+        .sort()
+        .join(",")}`
+    : session?.mode === "demo"
+      ? `demo:${session.memberships
+          .map(m => m.organizationId)
+          .sort()
+          .join(",")}`
+      : "anonymous";
   const isAcademy = organization?.type === "academy";
   const isDemoMode = session?.mode === "demo";
   const playersQuery = useApi<PlayerCard[]>("/players");
@@ -63,13 +77,11 @@ export default function Analysis() {
   const cards = playersQuery.data ?? [];
   const players = isAcademy
     ? cards
-    : cards.filter(
-        player =>
-          (isDemoMode && player.isDemo === true) ||
-          requests.data?.some(
-            request =>
-              request.playerId === player.id && request.status === "approved"
-          )
+    : cards.filter(player =>
+        requests.data?.some(
+          request =>
+            request.playerId === player.id && request.status === "approved"
+        )
       );
   const [playerId, setPlayerId] = useState(initial.playerId);
   const [selectedVideo, setSelectedVideo] = useState(initial.videoId);
@@ -95,9 +107,13 @@ export default function Analysis() {
   const controllerRef = useRef<AbortController | null>(null);
   const previewGeneration = useRef(0);
   const previewOwnedUrl = useRef<string | null>(null);
-  const priorScope = useRef({ orgId, playerId });
+  const priorScope = useRef({ orgId, playerId, sessionScope });
   const player = players.find(item => item.id === playerId);
   const allowed = Boolean(player);
+  const availableSkills = useMemo(
+    () => (player ? skillsForPlayer(player.sport, player.position) : []),
+    [player?.sport, player?.position]
+  );
   const videosQuery = useApi<Video[]>(`/videos?playerId=${playerId}`, allowed);
   const analysesQuery = useApi<AnalysisData[]>(
     `/analyses?playerId=${playerId}`,
@@ -136,7 +152,8 @@ export default function Analysis() {
     const old = priorScope.current;
     if (
       old.playerId !== playerId ||
-      (old.orgId !== undefined && old.orgId !== orgId)
+      (old.orgId !== undefined && old.orgId !== orgId) ||
+      old.sessionScope !== sessionScope
     ) {
       controllerRef.current?.abort();
       runRef.current += 1;
@@ -150,8 +167,8 @@ export default function Analysis() {
       setActionError("");
       clearPreview();
     }
-    priorScope.current = { orgId, playerId };
-  }, [orgId, playerId]);
+    priorScope.current = { orgId, playerId, sessionScope };
+  }, [orgId, playerId, sessionScope]);
 
   useEffect(
     () => () => {
@@ -199,8 +216,8 @@ export default function Analysis() {
   ]);
 
   useEffect(() => {
-    if (skill && !SKILLS.some(item => item === skill)) setSkill("");
-  }, [skill]);
+    if (player && skill && !availableSkills.includes(skill)) setSkill("");
+  }, [skill, player, availableSkills]);
 
   useEffect(() => {
     if (
@@ -216,7 +233,7 @@ export default function Analysis() {
         params.set("video", String(selectedVideo));
       else params.delete("video");
     }
-    if (SKILLS.some(item => item === skill)) params.set("skill", skill);
+    if (availableSkills.includes(skill)) params.set("skill", skill);
     else params.delete("skill");
     if (selectedSession) params.set("analysis", String(selectedSession));
     else params.delete("analysis");
@@ -351,8 +368,7 @@ export default function Analysis() {
     setActionError("");
     setSelectedSession(0);
     const video = videos.find(item => item.id === id);
-    if (video && SKILLS.some(item => item === video.skill))
-      setSkill(video.skill);
+    if (video && availableSkills.includes(video.skill)) setSkill(video.skill);
   }
 
   if (
@@ -492,7 +508,7 @@ export default function Analysis() {
                   disabled={!allowed || working || videoLoading}
                 >
                   <option value="">اختر المهارة</option>
-                  {SKILLS.map(item => (
+                  {availableSkills.map(item => (
                     <option key={item}>{item}</option>
                   ))}
                 </select>
@@ -637,6 +653,8 @@ export default function Analysis() {
                       ? `${player.age} سنة`
                       : "بيانات العمر غير متوفرة"}
                   </span>
+                  <span data-testid="analysis-academy-tenure">تاريخ الانضمام: {player.academyJoinDate || "غير محدد"} · مدة الانضمام {result?.createdAt ? "عند التحليل" : "حتى اليوم"}: {formatAcademyTenure(player.academyJoinDate, (result?.createdAt || calendarToday()).slice(0, 10))}</span>
+                  <small>{ACADEMY_TENURE_NOTE}</small>
                 </div>
                 <div className="analysis-player-links">
                   <TextLink href={`/players/${player.id}`}>ملف اللاعب</TextLink>

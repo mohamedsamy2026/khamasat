@@ -32,6 +32,11 @@ const healthFields: Array<{
     placeholder: "نوع الإصابة وتاريخها ومدتها…",
   },
   {
+    key: "chronicDiseases",
+    label: "الأمراض المزمنة",
+    placeholder: "التشخيصات أو المتابعات الطبية المستمرة، أو «لا يوجد»…",
+  },
+  {
     key: "currentMedications",
     label: "الأدوية الحالية",
     placeholder: "اسم الدواء والجرعة أو «لا يوجد»…",
@@ -42,6 +47,11 @@ const healthFields: Array<{
     placeholder: "البرنامج الحالي، التكرار، ملاحظات المعالج…",
   },
   {
+    key: "availableExams",
+    label: "الفحوصات المتاحة",
+    placeholder: "الفحوصات أو التقارير المتاحة وتواريخها…",
+  },
+  {
     key: "otherNotes",
     label: "ملاحظات صحية أخرى",
     placeholder: "حساسية، قيود مشاركة، متابعة طبية…",
@@ -50,15 +60,19 @@ const healthFields: Array<{
 
 type HealthForm = {
   previousInjuries: string;
+  chronicDiseases: string;
   currentMedications: string;
   physiotherapy: string;
+  availableExams: string;
   otherNotes: string;
 };
 
 const emptyHealth: HealthForm = {
   previousInjuries: "",
+  chronicDiseases: "",
   currentMedications: "",
   physiotherapy: "",
+  availableExams: "",
   otherNotes: "",
 };
 
@@ -124,8 +138,18 @@ export default function HealthPanel({ playerId }: { playerId: number }) {
       profile
         ? {
             previousInjuries: profile.previousInjuries,
+            chronicDiseases:
+              "chronicDiseases" in profile &&
+              typeof profile.chronicDiseases === "string"
+                ? profile.chronicDiseases
+                : "",
             currentMedications: profile.currentMedications,
             physiotherapy: profile.physiotherapy,
+            availableExams:
+              "availableExams" in profile &&
+              typeof profile.availableExams === "string"
+                ? profile.availableExams
+                : "",
             otherNotes: profile.otherNotes,
           }
         : emptyHealth
@@ -235,8 +259,14 @@ export default function HealthPanel({ playerId }: { playerId: number }) {
     }
   }
 
-  if (accessQuery.isLoading)
-    return <Loading label="جارٍ التحقق من صلاحيات البيانات الحساسة…" />;
+  if (
+    accessQuery.isLoading ||
+    healthQuery.isLoading ||
+    emergencyQuery.isLoading
+  )
+    return (
+      <Loading label="جارٍ التحقق من الصلاحيات وتحميل البيانات الصحية المحفوظة…" />
+    );
   if (accessQuery.isError) {
     // 403 here means the organization has no access at all to this player's
     // sensitive records; the server never reveals which scope exists.
@@ -317,6 +347,7 @@ export default function HealthPanel({ playerId }: { playerId: number }) {
                     <label className="field" key={field.key}>
                       {field.label}
                       <textarea
+                        aria-label={field.label}
                         rows={2}
                         maxLength={2000}
                         value={health[field.key]}

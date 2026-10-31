@@ -4,99 +4,46 @@ import {
   ArrowDownUp,
   Building2,
   Check,
-  ChevronDown,
   Filter,
-  GitCompareArrows,
   Heart,
   LockKeyhole,
   Plus,
   Search,
   Send,
-  SlidersHorizontal,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { AccessRequest, PlayerCard } from "@shared/athlete";
+import type { DemoDisplay } from "@shared/demo-display";
 import {
-  DEMO_LABEL,
-  SKILLS,
-  type AccessRequest,
-  type PlayerCard,
-  type Video,
-} from "@shared/athlete";
-import {
-  ALL_GROUPS,
+  apparatusForCategory,
+  apparatusName,
   gymnasticsCategoryName,
-  isSportId,
-  sportDefinition,
+  type GymnasticsCategoryId,
   type SportId,
 } from "@shared/sports";
 import { api, useApi, useAthlete } from "@/lib/athleteApi";
 import {
   Avatar,
-  DemoBadge,
   EmptyState,
   ErrorState,
   Loading,
   Modal,
   PageHeading,
   Panel,
-  ScoreRing,
-  SkillBars,
   StatusBadge,
-  VideoLibrary,
 } from "@/components/athlete/UI";
-import { hasDocumentedOverall } from "@/components/athlete/EvaluationSummary";
+import { SkillVideo } from "@/components/athlete/SkillCards";
+import "./directory.css";
 
-type RangeValue = [number, number];
-type SortMode = "assessment" | "recent" | "sessions";
-type RequestDraft = { player: PlayerCard; message: string };
+type DirectoryPlayerCard = PlayerCard & {
+  demoDisplay?: DemoDisplay;
+};
+type RequestDraft = { player: DirectoryPlayerCard; message: string };
+type AgeFilter = "" | "under16" | "16plus";
+type SortOption = "score_desc" | "score_asc" | "name";
 
-const MAX_COMPARE = 3;
-
-function ClubRecentVideoPreview({
-  playerId,
-  authorized,
-}: {
-  playerId: number;
-  authorized: boolean;
-}) {
-  const videosQuery = useApi<Video[]>(
-    `/videos?playerId=${playerId}`,
-    authorized
-  );
-  const latestVideo = useMemo(
-    () =>
-      (videosQuery.data ?? [])
-        .slice()
-        .sort(
-          (left, right) =>
-            Date.parse(right.recordedAt) - Date.parse(left.recordedAt) ||
-            Date.parse(right.createdAt) - Date.parse(left.createdAt)
-        )[0],
-    [videosQuery.data]
-  );
-
-  if (
-    !authorized ||
-    videosQuery.isLoading ||
-    videosQuery.isError ||
-    !latestVideo
-  )
-    return null;
-
-  return (
-    <div className="section-stack" aria-label="أحدث مقطع أداء مصرح به">
-      <p className="muted text-xs">
-        أحدث مقطع أداء مصرح به — التشغيل والمعاينة خاصان بهذه الجلسة.
-      </p>
-      <VideoLibrary
-        videos={[latestVideo]}
-        playerId={playerId}
-        canStartAnalysis={false}
-        showFilters={false}
-      />
-    </div>
-  );
-}
+const DEFAULT_GYMNASTICS_CATEGORY: GymnasticsCategoryId = "womens_artistic";
 
 function latestRequest(requests: AccessRequest[], playerId: number) {
   return requests
@@ -107,65 +54,110 @@ function latestRequest(requests: AccessRequest[], playerId: number) {
     )[0];
 }
 
-function toggleValue(values: Set<string>, value: string) {
-  const next = new Set(values);
-  if (next.has(value)) next.delete(value);
-  else next.add(value);
-  return next;
+function gymnasticsShortLabel(category: GymnasticsCategoryId | "") {
+  if (category === "womens_artistic") return "WAG";
+  if (category === "mens_artistic") return "MAG";
+  return "فئة غير محددة";
 }
 
-function TalentCard({
+function primaryApparatusLabel(player: DirectoryPlayerCard) {
+  if (!player.primaryApparatus) return "الجهاز غير محدد";
+  return apparatusName(player.primaryApparatus);
+}
+
+function playerSportSummary(player: DirectoryPlayerCard) {
+  if (player.sport === "football") return player.position || "المركز غير مسجل";
+  if (!player.gymnasticsCategory) return "فئة الجمباز غير مسجلة";
+  return `${gymnasticsShortLabel(player.gymnasticsCategory)} · ${primaryApparatusLabel(player)}`;
+}
+
+function playerMatchesFacet(
+  player: DirectoryPlayerCard,
+  sport: SportId,
+  category: GymnasticsCategoryId,
+  apparatus: string
+) {
+  if (sport === "football") return !apparatus || player.position === apparatus;
+  if (player.gymnasticsCategory !== category) return false;
+  // Membership in an apparatus is an athlete fact, not a category fact. Never
+  // infer it from the other apparatus available to WAG or MAG.
+  return !apparatus || player.primaryApparatus === apparatus;
+}
+
+function scoreForDirectory(player: DirectoryPlayerCard): number | null {
+  const demoScore = player.demoDisplay?.overall10;
+  if (typeof demoScore === "number" && Number.isFinite(demoScore))
+    return demoScore;
+
+  const coachMean = player.coachAssessment?.overall;
+  if (typeof coachMean === "number" && Number.isFinite(coachMean)) {
+    // Coach assessments are persisted on a 0–100 scale; the directory reads
+    // their saved mean only and expresses it on the requested /10 scale.
+    return coachMean / 10;
+  }
+  return null;
+}
+
+function scoreText(score: number) {
+  return score.toLocaleString("ar", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
+function TalentListRow({
   player,
   request,
   favorite,
-  selected,
-  compareLocked,
-  isDemoWorkspace,
+  favoriteBusy,
   onFavorite,
-  onCompare,
   onRequest,
   onOpenProfile,
 }: {
-  player: PlayerCard;
+  player: DirectoryPlayerCard;
   request: AccessRequest | undefined;
   favorite: boolean;
-  selected: boolean;
-  compareLocked: boolean;
-  isDemoWorkspace: boolean;
+  favoriteBusy: boolean;
   onFavorite: () => void;
-  onCompare: () => void;
   onRequest: () => void;
   onOpenProfile: () => void;
 }) {
-  const testedSkills = player.evaluation?.testedSkills ?? [];
+  const isDemo = Boolean(player.isDemo && player.demoDisplay);
   const profileApproved = request?.status === "approved";
-  const demoPlayerAvailable = isDemoWorkspace && player.isDemo === true;
-  const profileAvailable = profileApproved || demoPlayerAvailable;
-  const isVideoSample = player.isDemo && player.age === 0;
+  const score = scoreForDirectory(player);
+  const topSkills = (player.demoDisplay?.skills ?? [])
+    .filter(
+      skill => typeof skill.score === "number" && Number.isFinite(skill.score)
+    )
+    .slice()
+    .sort((left, right) => (right.score ?? -1) - (left.score ?? -1))
+    .slice(0, 3);
+  const featuredSkill = topSkills.find(skill => skill.video);
 
   return (
-    <Panel className="section-stack">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <Avatar player={player} size="md" />
-          <div className="min-w-0">
-            <h3 className="font-bold truncate">{player.name}</h3>
-            <p className="muted text-sm">
-              {isVideoSample
-                ? "ملف عرض — البيانات الأساسية غير متوفرة"
-                : `${player.age} سنة · ${sportDefinition(player.sport).name} · ${
-                    player.sport === "gymnastics" && player.gymnasticsCategory
-                      ? gymnasticsCategoryName(player.gymnasticsCategory)
-                      : player.position
-                  }`}
-            </p>
-            <p className="muted text-sm truncate">{player.academyName}</p>
-          </div>
+    <article
+      className="directory-talent-row"
+      data-player-id={player.id}
+      aria-label={`بطاقة ${player.name}`}
+    >
+      <div className="directory-row-identity" data-label="اللاعب">
+        <Avatar player={player} size="md" />
+        <div className="directory-row-name">
+          <strong>{player.name}</strong>
+          <span>{player.academyName}</span>
+          {player.sport === "gymnastics" ? (
+            <small>
+              {player.gymnasticsCategory
+                ? `${gymnasticsShortLabel(player.gymnasticsCategory)} · ${gymnasticsCategoryName(player.gymnasticsCategory)}`
+                : "فئة الجمباز غير مسجلة"}
+            </small>
+          ) : null}
         </div>
         <button
-          className={`icon-btn ${favorite ? "is-active" : ""}`}
+          className={`icon-btn directory-favorite ${favorite ? "is-active" : ""}`}
           type="button"
           onClick={onFavorite}
+          disabled={favoriteBusy}
           aria-label={
             favorite
               ? `إزالة ${player.name} من المفضلة`
@@ -177,111 +169,132 @@ function TalentCard({
         </button>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        {hasDocumentedOverall(player.evaluation) ? (
-          <div className="section-stack" style={{ gap: 3 }}>
-            <strong>
-              {player.evaluation?.overall.score?.toLocaleString("ar")}
-            </strong>
-            <span className="muted text-xs">
-              {player.evaluation?.overall.method}
-            </span>
-          </div>
-        ) : (
-          <span className="badge">لم يُقيّم</span>
-        )}
-        <div className="text-end">
-          <p className="muted text-xs">
-            {isVideoSample
-              ? "الفيديو والقياسات فقط"
-              : "التقييم العام يتطلب طريقة حساب موثقة"}
-          </p>
-          <p className="score-tag">
-            {player.evaluation?.sessionsCount ?? 0} جلسات موثقة
-          </p>
+      <dl className="directory-row-facts" data-label="البيانات الرياضية">
+        <div>
+          <dt>العمر</dt>
+          <dd>{player.age > 0 ? `${player.age} سنة` : "غير متاح"}</dd>
         </div>
+        <div>
+          <dt>المنطقة</dt>
+          <dd>{player.region || "غير متاحة"}</dd>
+        </div>
+        <div>
+          <dt>{player.sport === "football" ? "المركز" : "الفئة · الجهاز"}</dt>
+          <dd>{playerSportSummary(player)}</dd>
+        </div>
+      </dl>
+
+      <div className="directory-row-score" data-label="التقييم">
+        {score !== null ? (
+          <>
+            <strong>{scoreText(score)} / 10</strong>
+            <span>
+              {isDemo
+                ? player.demoDisplay?.level || "مستوى تجريبي محفوظ"
+                : `متوسط تقييم المدرب · ${player.coachAssessment?.assessedSkills ?? 0} مهارات`}
+            </span>
+          </>
+        ) : (
+          <>
+            <strong>غير مقيم</strong>
+            <span>لا يوجد متوسط تقييم مدرب محفوظ</span>
+          </>
+        )}
       </div>
 
-      {testedSkills.length > 0 ? (
-        <p className="muted text-sm">
-          المهارات المختبرة: {testedSkills.join("، ")}
-        </p>
-      ) : (
-        <p className="muted text-sm">لم تُختبر مهارة موثقة قابلة للعرض.</p>
-      )}
+      <div className="directory-row-skills" data-label="أفضل 3 مهارات">
+        {isDemo && topSkills.length ? (
+          topSkills.map(skill => {
+            const percentage = Math.max(0, Math.min(100, skill.score ?? 0));
+            return (
+              <div
+                className="directory-skill-bar"
+                key={`${skill.name}-${skill.englishName}`}
+              >
+                <div>
+                  <span>{skill.name}</span>
+                  <b>{Math.round(percentage).toLocaleString("ar")}٪</b>
+                </div>
+                <progress
+                  value={percentage}
+                  max={100}
+                  aria-label={`${skill.name} ${Math.round(percentage)}٪`}
+                />
+              </div>
+            );
+          })
+        ) : (
+          <span className="directory-unassessed">
+            لا توجد مهارات تجريبية مقيمة
+          </span>
+        )}
+      </div>
 
-      {profileAvailable ? (
-        <ClubRecentVideoPreview
-          playerId={player.id}
-          authorized={profileAvailable}
-        />
-      ) : null}
+      <div className="directory-row-video" data-label="فيديو الأداء">
+        {isDemo && featuredSkill?.video ? (
+          <SkillVideo
+            video={featuredSkill.video}
+            playerId={player.id}
+            compact
+          />
+        ) : (
+          <span className="directory-no-video">
+            <Video size={16} /> لا يوجد فيديو مهارة مصرح للعرض
+          </span>
+        )}
+      </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          className={`btn btn-ghost ${selected ? "is-active" : ""}`}
-          type="button"
-          onClick={onCompare}
-          disabled={!selected && compareLocked}
-          title={
-            compareLocked && !selected
-              ? `يمكن مقارنة ${MAX_COMPARE} لاعبين كحد أقصى`
-              : undefined
-          }
-        >
-          <GitCompareArrows size={16} />
-          {selected ? "ضمن المقارنة" : "إضافة للمقارنة"}
-        </button>
-        {profileAvailable ? (
+      <div className="directory-row-actions" data-label="الإجراءات">
+        {isDemo ? (
           <button
-            className="btn btn-primary"
+            className="btn btn-primary btn-sm"
             type="button"
             onClick={onOpenProfile}
           >
-            <Check size={16} />
-            عرض الملف
+            {player.sport === "gymnastics" && player.gymnasticsCategory
+              ? `عرض ملف ${gymnasticsShortLabel(player.gymnasticsCategory)} التجريبي`
+              : "عرض الملف التجريبي"}
           </button>
+        ) : profileApproved ? (
+          <button
+            className="btn btn-primary btn-sm"
+            type="button"
+            onClick={onOpenProfile}
+          >
+            <Check size={16} /> عرض الملف الكامل
+          </button>
+        ) : null}
+
+        {profileApproved ? (
+          <span className="directory-request-state is-approved">
+            <StatusBadge status="approved" /> وصول كامل مصرح
+          </span>
         ) : request?.status === "pending" ? (
-          <span className="badge">
+          <span className="directory-request-state">
             <StatusBadge status="pending" /> طلبك قيد المراجعة
           </span>
         ) : (
-          <button className="btn btn-outline" type="button" onClick={onRequest}>
-            <LockKeyhole size={16} />
-            طلب الملف كاملًا
-          </button>
-        )}
-      </div>
-      {demoPlayerAvailable ? (
-        <div className="section-stack">
           <button
-            className="btn btn-outline"
+            className="btn btn-outline btn-sm"
             type="button"
             onClick={onRequest}
-            disabled={request?.status === "pending" || profileApproved}
-            title={
-              request?.status === "pending"
-                ? "الطلب التجريبي قيد المراجعة؛ فتح الملف الافتراضي متاح دون انتظار."
-                : profileApproved
-                  ? "صدرت الموافقة على الطلب؛ الملف التجريبي متاح."
-                  : "يبقى مسار الطلب للعرض، لكن البيانات الحقيقية لا تُفتح إلا بموافقة الأكاديمية."
-            }
           >
-            <LockKeyhole size={16} />
-            طلب الملف كاملًا
+            <LockKeyhole size={15} />
+            {request?.status === "rejected" || request?.status === "revoked"
+              ? "إعادة طلب الملف الكامل"
+              : "طلب الملف الكامل"}
           </button>
-          <p className="helper">
-            الملف الافتراضي متاح مباشرة للعرض. الموافقة مطلوبة للبيانات
-            الحقيقية، والطلب هنا يحافظ على رحلة الوصول.
+        )}
+
+        {request?.status === "rejected" || request?.status === "revoked" ? (
+          <p className="directory-request-note">
+            {request.status === "rejected"
+              ? "تم رفض الطلب السابق؛ يمكنك إعادة الإرسال برسالة أوضح."
+              : "ألغيت صلاحية الوصول؛ يلزم طلب جديد قبل فتح الملف الكامل."}
           </p>
-        </div>
-      ) : null}
-      {request?.status === "rejected" || request?.status === "revoked" ? (
-        <p className="muted text-xs">
-          يمكنك إرسال طلب جديد وفقًا لسياسة الأكاديمية.
-        </p>
-      ) : null}
-    </Panel>
+        ) : null}
+      </div>
+    </article>
   );
 }
 
@@ -295,7 +308,6 @@ function ClubWorkspacePrompt() {
   const clubMemberships = (session?.memberships ?? []).filter(
     membership => membership.type === "club"
   );
-  const isDemo = session?.mode === "demo";
 
   async function createClub(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -332,16 +344,14 @@ function ClubWorkspacePrompt() {
     <div className="section-stack">
       <PageHeading
         title="واجهة الأندية"
-        subtitle={`أنت تعمل حاليًا ضمن ${organization?.name ?? "أكاديمية"}. ${isDemo ? "اختر نادي مساحة العرض أدناه؛ لا يلزم تسجيل Manus." : "غيّر إلى عضوية نادٍ حقيقية للوصول إلى البحث."}`}
+        subtitle={`تعمل حاليًا ضمن ${organization?.name ?? "مساحة أخرى"}. اختر عضوية نادٍ فعلية للبحث في ملفات المواهب.`}
         icon={Building2}
-        actions={<DemoBadge compact />}
       />
-      <Panel title="ابحث من مساحة النادي المناسبة" icon={Building2}>
+      <Panel title="اختر ناديك أولًا" icon={Building2}>
         <div className="section-stack">
           <p className="muted">
-            {isDemo
-              ? "يمكنك التبديل إلى نادي مساحة العرض المعزولة دون تغيير أي عضوية حقيقية أو الحاجة إلى موافقة لعرض الملفات الافتراضية."
-              : "لا يمكن تحويل دور الأكاديمية من هذه الواجهة. استخدم عضوية نادٍ تملكها بالفعل أو أنشئ مساحة نادي جديدة مملوكة لحسابك."}
+            لا يمنح اختيار الواجهة أي صلاحية إضافية؛ تظهر هنا عضويات النادي التي
+            يتحقق منها الخادم لحسابك فقط.
           </p>
           {clubMemberships.length > 0 ? (
             <div className="flex flex-wrap gap-2">
@@ -352,24 +362,20 @@ function ClubWorkspacePrompt() {
                   key={membership.organizationId}
                   onClick={() => setOrgId(membership.organizationId)}
                 >
-                  التبديل إلى {membership.name}
+                  الدخول إلى {membership.name}
                 </button>
               ))}
             </div>
-          ) : null}
-          {isDemo ? (
-            <p className="muted text-sm">
-              مساحة العرض التجريبي صادرة من الخادم وتحتوي على عضوياتها المحددة؛
-              إنشاء مؤسسة جديدة متاح بعد تسجيل الدخول للبيانات الحقيقية.
-            </p>
           ) : null}
           <button
             className="btn btn-outline"
             type="button"
             onClick={() => setOpen(true)}
-            disabled={isDemo}
+            disabled={session?.mode === "demo"}
             title={
-              isDemo ? "إنشاء المؤسسات متاح للحسابات المسجلة فقط." : undefined
+              session?.mode === "demo"
+                ? "إنشاء المؤسسات متاح للحسابات المسجلة فقط."
+                : undefined
             }
           >
             <Plus size={16} />
@@ -381,28 +387,26 @@ function ClubWorkspacePrompt() {
         <Modal title="إنشاء مساحة نادي" onClose={() => setOpen(false)}>
           <form className="section-stack" onSubmit={createClub}>
             <p className="muted text-sm">
-              سيُنشأ هذا النادي كمساحة مملوكة لحسابك؛ لا يغير صلاحيات عضوياتك
-              الأخرى.
+              سيُنشأ النادي ضمن حسابك. تبقى صلاحيات الوصول إلى ملفات اللاعبين
+              خاضعة لموافقة الأكاديمية المالكة.
             </p>
-            <label>
+            <label className="field">
               <span>اسم النادي</span>
               <input
-                className="field"
                 value={name}
                 onChange={event => setName(event.target.value)}
                 required
               />
             </label>
-            <label>
+            <label className="field">
               <span>المنطقة</span>
               <input
-                className="field"
                 value={region}
                 onChange={event => setRegion(event.target.value)}
                 required
               />
             </label>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? <p className="form-error">{error}</p> : null}
             <button className="btn btn-primary" type="submit" disabled={saving}>
               {saving ? "جارٍ الإنشاء…" : "إنشاء مساحة النادي"}
             </button>
@@ -414,170 +418,141 @@ function ClubWorkspacePrompt() {
 }
 
 function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
-  const { organization, invalidate, session } = useAthlete();
+  const { organization, invalidate } = useAthlete();
   const [, setLocation] = useLocation();
   const isClub = organization?.type === "club";
-  const isDemoSession = session?.mode === "demo";
-  const isDemoWorkspace = isDemoSession && organization?.isDemo === true;
-  const playersQuery = useApi<PlayerCard[]>("/players", isClub);
+  const playersQuery = useApi<DirectoryPlayerCard[]>("/players", isClub);
   const requestsQuery = useApi<AccessRequest[]>("/requests", isClub);
   const favoritesQuery = useApi<number[]>("/favorites", isClub);
 
   const [search, setSearch] = useState("");
-  const [age, setAge] = useState<RangeValue>([12, 22]);
-  const [height, setHeight] = useState<RangeValue>([140, 210]);
-  const [weight, setWeight] = useState<RangeValue>([35, 110]);
-  const [positions, setPositions] = useState<Set<string>>(new Set());
-  const [sportFilter, setSportFilter] = useState<SportId | "">("");
-  const [skills, setSkills] = useState<Set<string>>(new Set());
+  const [sport, setSport] = useState<SportId>("football");
+  const [gymnasticsCategory, setGymnasticsCategory] =
+    useState<GymnasticsCategoryId>(DEFAULT_GYMNASTICS_CATEGORY);
+  const [age, setAge] = useState<AgeFilter>("");
   const [region, setRegion] = useState("");
-  const [foot, setFoot] = useState("");
-  const [sort, setSort] = useState<SortMode>("assessment");
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [facet, setFacet] = useState("");
+  const [level, setLevel] = useState("");
+  const [sort, setSort] = useState<SortOption>("score_desc");
   const [requestDraft, setRequestDraft] = useState<RequestDraft | null>(null);
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestError, setRequestError] = useState("");
-  const [compareOpen, setCompareOpen] = useState(false);
   const [favoriteBusyId, setFavoriteBusyId] = useState<number | null>(null);
 
   const players = playersQuery.data ?? [];
-  const activeGroups = sportFilter
-    ? sportDefinition(sportFilter).groups.map(group => group.id)
-    : ALL_GROUPS;
-  const activeTerminology = sportFilter
-    ? sportDefinition(sportFilter).terminology.positions
-    : "المركز أو الفئة";
   const requests = requestsQuery.data ?? [];
   const favoriteIds = useMemo(
     () => new Set(favoritesQuery.data ?? []),
     [favoritesQuery.data]
   );
+  const sportPlayers = useMemo(
+    () =>
+      players.filter(
+        player =>
+          player.sport === sport &&
+          (sport !== "gymnastics" ||
+            player.gymnasticsCategory === gymnasticsCategory)
+      ),
+    [gymnasticsCategory, players, sport]
+  );
   const regions = useMemo(
     () =>
-      [...new Set(players.map(player => player.region).filter(Boolean))].sort(),
-    [players]
+      [
+        ...new Set(sportPlayers.map(player => player.region).filter(Boolean)),
+      ].sort(),
+    [sportPlayers]
   );
-  const feet = useMemo(
+  const levelOptions = useMemo(
     () =>
-      [...new Set(players.map(player => player.foot).filter(Boolean))].sort(),
-    [players]
+      [
+        ...new Set(
+          sportPlayers.flatMap(player =>
+            player.demoDisplay?.level ? [player.demoDisplay.level] : []
+          )
+        ),
+      ].sort(),
+    [sportPlayers]
+  );
+  const facetOptions = useMemo(
+    () =>
+      sport === "football"
+        ? [
+            ...new Set(
+              sportPlayers.map(player => player.position).filter(Boolean)
+            ),
+          ].sort()
+        : apparatusForCategory(gymnasticsCategory).map(apparatus => ({
+            id: apparatus.id,
+            label: apparatus.name,
+          })),
+    [gymnasticsCategory, sport, sportPlayers]
   );
 
   const results = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("ar-SA");
-    const filtered = players.filter(player => {
+    const filtered = sportPlayers.filter(player => {
       const matchesSearch =
         !normalizedSearch ||
         [
           player.name,
           player.position,
           player.academyName,
-          sportDefinition(player.sport).name,
+          player.region,
+          playerSportSummary(player),
+          player.gymnasticsCategory
+            ? gymnasticsShortLabel(player.gymnasticsCategory)
+            : "",
         ].some(value =>
           value.toLocaleLowerCase("ar-SA").includes(normalizedSearch)
         );
-      const referenceOnly = player.isDemo && player.age === 0;
-      const matchesAge = referenceOnly
-        ? age[0] === 12 && age[1] === 22
-        : player.age >= age[0] && player.age <= age[1];
-      const matchesHeight = referenceOnly
-        ? height[0] === 140 && height[1] === 210
-        : player.height >= height[0] && player.height <= height[1];
-      const matchesWeight = referenceOnly
-        ? weight[0] === 35 && weight[1] === 110
-        : player.weight >= weight[0] && player.weight <= weight[1];
-      const matchesSport = !sportFilter || player.sport === sportFilter;
-      const matchesPosition =
-        positions.size === 0 ||
-        positions.has(
-          player.sport === "gymnastics" && player.gymnasticsCategory
-            ? gymnasticsCategoryName(player.gymnasticsCategory)
-            : player.position
-        );
-      const matchesSkills =
-        skills.size === 0 ||
-        [...skills].every(skill =>
-          player.evaluation?.testedSkills.includes(skill)
-        );
+      const matchesAge =
+        !age ||
+        (age === "under16"
+          ? player.age > 0 && player.age < 16
+          : player.age >= 16);
       const matchesRegion = !region || player.region === region;
-      const matchesFoot = !foot || player.foot === foot;
-      const matchesFavorite = !favoritesOnly || favoriteIds.has(player.id);
+      const matchesFacet = playerMatchesFacet(
+        player,
+        sport,
+        gymnasticsCategory,
+        facet
+      );
+      const matchesLevel = !level || player.demoDisplay?.level === level;
       return (
         matchesSearch &&
         matchesAge &&
-        matchesHeight &&
-        matchesWeight &&
-        matchesSport &&
-        matchesPosition &&
-        matchesSkills &&
         matchesRegion &&
-        matchesFoot &&
-        matchesFavorite
+        matchesFacet &&
+        matchesLevel &&
+        (!favoritesOnly || favoriteIds.has(player.id))
       );
     });
 
-    return filtered.sort((left, right) => {
-      if (sort === "sessions")
-        return (
-          (right.evaluation?.sessionsCount ?? 0) -
-          (left.evaluation?.sessionsCount ?? 0)
-        );
-      if (sort === "recent")
-        return (
-          Date.parse(right.evaluation?.lastEvaluationAt ?? "") -
-          Date.parse(left.evaluation?.lastEvaluationAt ?? "")
-        );
-      return (
-        Number(hasDocumentedOverall(right.evaluation)) -
-        Number(hasDocumentedOverall(left.evaluation))
-      );
+    return filtered.slice().sort((left, right) => {
+      if (sort === "name") return left.name.localeCompare(right.name, "ar");
+      const leftScore = scoreForDirectory(left);
+      const rightScore = scoreForDirectory(right);
+      if (leftScore === null && rightScore === null)
+        return left.name.localeCompare(right.name, "ar");
+      if (leftScore === null) return 1;
+      if (rightScore === null) return -1;
+      const difference =
+        sort === "score_asc" ? leftScore - rightScore : rightScore - leftScore;
+      return difference || left.name.localeCompare(right.name, "ar");
     });
   }, [
     age,
+    facet,
     favoriteIds,
     favoritesOnly,
-    foot,
-    height,
-    players,
-    positions,
+    gymnasticsCategory,
+    level,
     region,
     search,
-    skills,
     sort,
-    sportFilter,
-    weight,
+    sport,
+    sportPlayers,
   ]);
-
-  const comparedPlayers = useMemo(
-    () => players.filter(player => selectedIds.includes(player.id)),
-    [players, selectedIds]
-  );
-
-  function updateRange(
-    index: 0 | 1,
-    rawValue: string,
-    currentRange: RangeValue,
-    setter: (range: RangeValue) => void
-  ) {
-    const value = Number(rawValue);
-    setter(
-      index === 0
-        ? [Math.min(value, currentRange[1]), currentRange[1]]
-        : [currentRange[0], Math.max(value, currentRange[0])]
-    );
-  }
-
-  function toggleCompare(playerId: number) {
-    setSelectedIds(current => {
-      if (current.includes(playerId))
-        return current.filter(id => id !== playerId);
-      if (current.length >= MAX_COMPARE) {
-        toast.error(`يمكن مقارنة ${MAX_COMPARE} لاعبين كحد أقصى.`);
-        return current;
-      }
-      return [...current, playerId];
-    });
-  }
 
   async function toggleFavorite(playerId: number) {
     setFavoriteBusyId(playerId);
@@ -610,7 +585,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
         }),
       });
       await invalidate();
-      toast.success("تم إرسال طلب الاطلاع إلى الأكاديمية.");
+      toast.success("تم إرسال طلب الملف إلى الأكاديمية.");
       setRequestDraft(null);
     } catch (cause) {
       setRequestError(
@@ -621,13 +596,37 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
     }
   }
 
+  function selectSport(next: SportId) {
+    setSport(next);
+    setGymnasticsCategory(DEFAULT_GYMNASTICS_CATEGORY);
+    setFacet("");
+    setRegion("");
+    setLevel("");
+  }
+
+  function selectGymnasticsCategory(next: GymnasticsCategoryId) {
+    setGymnasticsCategory(next);
+    setFacet("");
+    setRegion("");
+    setLevel("");
+  }
+
+  function resetFilters() {
+    setSearch("");
+    setAge("");
+    setRegion("");
+    setFacet("");
+    setLevel("");
+    setSort("score_desc");
+  }
+
   if (!isClub) return <ClubWorkspacePrompt />;
   if (
     playersQuery.isLoading ||
     requestsQuery.isLoading ||
     favoritesQuery.isLoading
   )
-    return <Loading label="جارٍ تحميل بطاقات المواهب…" />;
+    return <Loading label="جارٍ تحميل قائمة المواهب…" />;
   if (playersQuery.error || requestsQuery.error || favoritesQuery.error) {
     const error =
       playersQuery.error ?? requestsQuery.error ?? favoritesQuery.error;
@@ -645,201 +644,167 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
     );
   }
 
-  const headingTitle = favoritesOnly ? "المفضلة" : "البحث عن المواهب";
-  const headingSubtitle = favoritesOnly
-    ? "قائمة اللاعبين التي حفظها ناديك للمتابعة."
-    : isDemoSession
-      ? "اعرض ملفات اللاعبين الافتراضيين مباشرة أمام اللجنة؛ يبقى طلب الأكاديمية لازمًا للبيانات الحقيقية."
-      : "اكتشف بطاقات رياضية محدودة، ثم اطلب الملف الكامل من الأكاديمية المالكة.";
-
+  const isGymnastics = sport === "gymnastics";
   return (
-    <div className="section-stack">
+    <div className="section-stack directory-page">
       <PageHeading
-        title={headingTitle}
-        subtitle={headingSubtitle}
-        icon={favoritesOnly ? Heart : Search}
-        actions={
-          isDemoSession ? (
-            <DemoBadge />
-          ) : (
-            <span className="badge">بطاقات مصرح بها</span>
-          )
+        title={favoritesOnly ? "المفضلة" : "اكتشاف المواهب"}
+        subtitle={
+          favoritesOnly
+            ? "المواهب التي حفظها ناديك، مع بقاء تفاصيل الملفات خاضعة للصلاحية الفعلية."
+            : "قائمة مواهب مختصرة؛ لا يفتح الملف الكامل للسجلات الحقيقية إلا بموافقة الأكاديمية."
         }
+        icon={favoritesOnly ? Heart : Search}
+        actions={<span className="badge">قائمة مواهب مصرح بها</span>}
       />
 
-      <Panel
-        title="بحث وتصفية"
-        icon={Filter}
-        actions={
-          <span className="muted text-sm">
-            {isDemoSession
-              ? "بيانات العرض غير مقيمة؛ القياسات من الفيديو فقط دون معيار أداء مفترض"
-              : "بطاقات محدودة وفق صلاحية المؤسسة"}
-          </span>
-        }
-      >
-        <div className="section-stack">
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="search-field flex-1 min-w-[190px]">
-              <Search size={18} />
-              <input
-                value={search}
-                onChange={event => setSearch(event.target.value)}
-                placeholder="ابحث بالاسم أو المركز أو الأكاديمية"
-                aria-label="البحث عن لاعب"
-              />
-            </label>
-            <label className="field min-w-[175px]">
-              <span>الرياضة</span>
-              <select
-                aria-label="اختيار الرياضة"
-                value={sportFilter}
-                onChange={event => {
-                  const next = event.target.value;
-                  setSportFilter(isSportId(next) ? next : "");
-                  setPositions(new Set());
-                  setSkills(new Set());
-                  setFoot("");
-                }}
-              >
-                <option value="">جميع الرياضات</option>
-                <option value="football">كرة القدم</option>
-                <option value="gymnastics">الجمباز</option>
-              </select>
-            </label>
+      <Panel title="ابحث عن لاعب" icon={Filter}>
+        <div className="directory-toolbar">
+          <label className="search-field directory-search">
+            <Search size={18} />
+            <input
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              placeholder="ابحث بالاسم أو الأكاديمية أو المركز"
+              aria-label="البحث عن لاعب"
+            />
+          </label>
+          <div
+            className="directory-sport-filter"
+            role="group"
+            aria-label="تصفية الرياضة"
+          >
+            <button
+              className={sport === "football" ? "is-active" : ""}
+              type="button"
+              onClick={() => selectSport("football")}
+            >
+              كرة القدم
+            </button>
+            <span aria-hidden="true">|</span>
+            <button
+              className={sport === "gymnastics" ? "is-active" : ""}
+              type="button"
+              onClick={() => selectSport("gymnastics")}
+            >
+              الجمباز
+            </button>
           </div>
-          <div className="filters">
-            <label>
-              <span>المنطقة</span>
+          {isGymnastics ? (
+            <label className="directory-filter-field">
+              <span>الفئة الرياضية</span>
               <select
-                className="field"
-                value={region}
-                onChange={event => setRegion(event.target.value)}
+                aria-label="الفئة الرياضية"
+                value={gymnasticsCategory}
+                onChange={event =>
+                  selectGymnasticsCategory(
+                    event.target.value as GymnasticsCategoryId
+                  )
+                }
               >
-                <option value="">كل المناطق</option>
-                {regions.map(item => (
-                  <option value={item} key={item}>
-                    {item}
-                  </option>
-                ))}
+                <option value="womens_artistic">WAG · سيدات</option>
+                <option value="mens_artistic">MAG · رجال</option>
               </select>
             </label>
-            {sportFilter !== "gymnastics" && <label>
-              <span>القدم المفضلة</span>
-              <select
-                className="field"
-                value={foot}
-                onChange={event => setFoot(event.target.value)}
-              >
-                <option value="">كل الخيارات</option>
-                {feet.map(item => (
-                  <option value={item} key={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>}
-            <label>
-              <span>الترتيب</span>
-              <select
-                className="field"
-                value={sort}
-                onChange={event => setSort(event.target.value as SortMode)}
-              >
-                <option value="assessment">حالة التقييم الموثق</option>
-                <option value="recent">أحدث جلسة مقاسة</option>
-                <option value="sessions">عدد الجلسات المقاسة</option>
-              </select>
-            </label>
-          </div>
-          <details className="filters">
-            <summary>
-              <SlidersHorizontal size={16} /> مرشحات متقدمة
-            </summary>
-            <div className="form-grid">
-              <RangeFilter
-                label="العمر"
-                range={age}
-                unit="سنة"
-                min={8}
-                max={25}
-                onChange={(index, value) =>
-                  updateRange(index, value, age, setAge)
-                }
-              />
-              <RangeFilter
-                label="الطول"
-                range={height}
-                unit="سم"
-                min={120}
-                max={220}
-                onChange={(index, value) =>
-                  updateRange(index, value, height, setHeight)
-                }
-              />
-              <RangeFilter
-                label="الوزن"
-                range={weight}
-                unit="كغ"
-                min={25}
-                max={130}
-                onChange={(index, value) =>
-                  updateRange(index, value, weight, setWeight)
-                }
-              />
-            </div>
-          </details>
+          ) : null}
+          <label className="directory-filter-field">
+            <span>العمر</span>
+            <select
+              aria-label="العمر"
+              value={age}
+              onChange={event => setAge(event.target.value as AgeFilter)}
+            >
+              <option value="">كل الأعمار</option>
+              <option value="under16">أقل من 16 سنة</option>
+              <option value="16plus">16 سنة فأكثر</option>
+            </select>
+          </label>
+          <label className="directory-filter-field">
+            <span>المنطقة</span>
+            <select
+              aria-label="المنطقة"
+              value={region}
+              onChange={event => setRegion(event.target.value)}
+            >
+              <option value="">كل المناطق</option>
+              {regions.map(item => (
+                <option value={item} key={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="directory-filter-field">
+            <span>{isGymnastics ? "الجهاز" : "المركز"}</span>
+            <select
+              aria-label={isGymnastics ? "الجهاز" : "المركز"}
+              value={facet}
+              onChange={event => setFacet(event.target.value)}
+            >
+              <option value="">
+                {isGymnastics ? "كل الأجهزة" : "كل المراكز"}
+              </option>
+              {isGymnastics
+                ? (facetOptions as Array<{ id: string; label: string }>).map(
+                    option => (
+                      <option value={option.id} key={option.id}>
+                        {option.label}
+                      </option>
+                    )
+                  )
+                : (facetOptions as string[]).map(option => (
+                    <option value={option} key={option}>
+                      {option}
+                    </option>
+                  ))}
+            </select>
+          </label>
+          <label className="directory-filter-field">
+            <span>المستوى</span>
+            <select
+              aria-label="المستوى"
+              value={level}
+              onChange={event => setLevel(event.target.value)}
+            >
+              <option value="">كل المستويات</option>
+              {levelOptions.map(item => (
+                <option value={item} key={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="directory-filter-field">
+            <span>ترتيب النتائج</span>
+            <select
+              aria-label="ترتيب النتائج"
+              value={sort}
+              onChange={event => setSort(event.target.value as SortOption)}
+            >
+              <option value="score_desc">الأعلى تقييمًا</option>
+              <option value="score_asc">الأقل تقييمًا</option>
+              <option value="name">الاسم</option>
+            </select>
+          </label>
+          <button
+            className="btn btn-ghost directory-reset"
+            type="button"
+            onClick={resetFilters}
+          >
+            إعادة الضبط
+          </button>
         </div>
       </Panel>
 
-      <div className="grid-2">
-        <Panel title={activeTerminology} icon={ChevronDown}>
-          <div className="section-stack">
-            {activeGroups.map(position => (
-              <label className="flex items-center gap-2" key={position}>
-                <input
-                  type="checkbox"
-                  checked={positions.has(position)}
-                  onChange={() =>
-                    setPositions(current => toggleValue(current, position))
-                  }
-                />
-                <span>{position}</span>
-              </label>
-            ))}
-          </div>
-        </Panel>
-        {sportFilter !== "gymnastics" && <Panel title="المهارات التي عولجت لها مقاطع" icon={ChevronDown}>
-          <div className="section-stack">
-            {SKILLS.map(skill => (
-              <label className="flex items-center gap-2" key={skill}>
-                <input
-                  type="checkbox"
-                  checked={skills.has(skill)}
-                  onChange={() =>
-                    setSkills(current => toggleValue(current, skill))
-                  }
-                />
-                <span>{skill}</span>
-              </label>
-            ))}
-          </div>
-        </Panel>}
-      </div>
-
       <Panel
-        title={`${favoritesOnly ? "المفضلة" : "نتائج البحث"} (${results.length})`}
+        title={`${favoritesOnly ? "المفضلة" : "النتائج"} (${results.length})`}
         icon={ArrowDownUp}
         actions={
-          <button
-            className="btn btn-outline"
-            type="button"
-            disabled={comparedPlayers.length < 2}
-            onClick={() => setCompareOpen(true)}
-          >
-            <GitCompareArrows size={16} />
-            مقارنة المختارين ({comparedPlayers.length}/{MAX_COMPARE})
-          </button>
+          <span className="muted text-sm">
+            {isGymnastics
+              ? `${gymnasticsShortLabel(gymnasticsCategory)} · أجهزة أساسية`
+              : "بطاقات كرة القدم"}
+          </span>
         }
       >
         {results.length === 0 ? (
@@ -847,32 +812,37 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
             title={
               favoritesOnly
                 ? "لا توجد عناصر مفضلة مطابقة"
-                : "لا توجد نتائج مطابقة"
+                : "لا توجد مواهب مطابقة"
             }
             description={
               favoritesOnly
-                ? "أضف بطاقة موهبة من نتائج البحث لتظهر هنا."
-                : "عدّل المرشحات أو جرّب نطاقًا أوسع للبحث."
+                ? "احفظ موهبة لتظهر هنا، أو وسّع التصفية."
+                : "جرّب تغيير العمر أو المنطقة أو المركز / الجهاز."
             }
           />
         ) : (
-          <div className="grid-3">
+          <div className="directory-talent-list">
+            <div className="directory-list-header" aria-hidden="true">
+              <span>اللاعب</span>
+              <span>البيانات الرياضية</span>
+              <span>التقييم</span>
+              <span>أفضل 3 مهارات</span>
+              <span>فيديو الأداء</span>
+              <span>الإجراءات</span>
+            </div>
             {results.map(player => {
               const request = latestRequest(requests, player.id);
               return (
-                <TalentCard
+                <TalentListRow
                   key={player.id}
                   player={player}
                   request={request}
                   favorite={favoriteIds.has(player.id)}
-                  selected={selectedIds.includes(player.id)}
-                  compareLocked={selectedIds.length >= MAX_COMPARE}
-                  isDemoWorkspace={isDemoWorkspace}
+                  favoriteBusy={favoriteBusyId === player.id}
                   onFavorite={() => {
                     if (favoriteBusyId !== player.id)
                       void toggleFavorite(player.id);
                   }}
-                  onCompare={() => toggleCompare(player.id)}
                   onRequest={() => {
                     setRequestError("");
                     setRequestDraft({ player, message: "" });
@@ -887,19 +857,17 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
 
       {requestDraft ? (
         <Modal
-          title={`طلب الملف الكامل: ${requestDraft.player.name}`}
+          title={`طلب الملف كاملًا: ${requestDraft.player.name}`}
           onClose={() => setRequestDraft(null)}
         >
           <form className="section-stack" onSubmit={submitRequest}>
             <p className="muted text-sm">
-              {isDemoSession
-                ? "يُسجل الطلب في لوحة أكاديمية مساحة العرض. الملف الافتراضي متاح مباشرة دون انتظار؛ أما البيانات الحقيقية فلا تُفتح إلا بعد الموافقة."
-                : "ستصل رسالتك إلى الأكاديمية المالكة. لا يصبح الملف الكامل متاحًا إلا بعد الموافقة."}
+              سيصل طلبك إلى الأكاديمية المالكة. لا يصبح الملف الكامل للسجل
+              الحقيقي متاحًا إلا عندما توافق الأكاديمية عليه.
             </p>
-            <label>
+            <label className="field">
               <span>رسالة إلى الأكاديمية</span>
               <textarea
-                className="field"
                 rows={5}
                 value={requestDraft.message}
                 onChange={event =>
@@ -913,9 +881,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
                 required
               />
             </label>
-            {requestError ? (
-              <p className="text-sm text-red-600">{requestError}</p>
-            ) : null}
+            {requestError ? <p className="form-error">{requestError}</p> : null}
             <button
               className="btn btn-primary"
               type="submit"
@@ -927,128 +893,7 @@ function ClubDiscovery({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
           </form>
         </Modal>
       ) : null}
-
-      {compareOpen ? (
-        <Modal
-          title="مقارنة اللاعبين المختارين"
-          onClose={() => setCompareOpen(false)}
-          wide
-        >
-          <div className="section-stack">
-            <p className="muted text-sm">
-              تُعرض المقارنة من مؤشرات البطاقات المتاحة لناديك فقط.
-            </p>
-            <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>المؤشر</th>
-                    {comparedPlayers.map(player => (
-                      <th key={player.id}>{player.name}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th>العمر</th>
-                    {comparedPlayers.map(player => (
-                      <td key={player.id}>
-                        {player.age > 0 ? `${player.age} سنة` : "غير متوفر"}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <th>المركز</th>
-                    {comparedPlayers.map(player => (
-                      <td key={player.id}>{player.position}</td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <th>التقييم</th>
-                    {comparedPlayers.map(player => (
-                      <td key={player.id}>
-                        {hasDocumentedOverall(player.evaluation)
-                          ? `${player.evaluation?.overall.score} — ${player.evaluation?.overall.method}`
-                          : "لم يُقيّم"}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <th>الجلسات المقاسة</th>
-                    {comparedPlayers.map(player => (
-                      <td key={player.id}>
-                        {player.evaluation?.sessionsCount ?? 0}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="grid-3">
-              {comparedPlayers.map(player => (
-                <Panel key={player.id} title={player.name}>
-                  {(player.evaluation?.testedSkills.length ?? 0) > 0 ? (
-                    <p>
-                      {player.evaluation?.testedSkills.join("، ")} — نتائج فقط
-                      دون درجة للمهارة.
-                    </p>
-                  ) : (
-                    <p className="muted">
-                      لم يُقيّم. تقارن جلسات اللاعب المتوافقة داخل الملف، لا هذه
-                      البطاقات الخام.
-                    </p>
-                  )}
-                </Panel>
-              ))}
-            </div>
-          </div>
-        </Modal>
-      ) : null}
     </div>
-  );
-}
-
-function RangeFilter({
-  label,
-  range,
-  unit,
-  min,
-  max,
-  onChange,
-}: {
-  label: string;
-  range: RangeValue;
-  unit?: string;
-  min: number;
-  max: number;
-  onChange: (index: 0 | 1, value: string) => void;
-}) {
-  return (
-    <fieldset>
-      <legend>
-        {label}: {range[0]}
-        {unit ? ` ${unit}` : ""} — {range[1]}
-        {unit ? ` ${unit}` : ""}
-      </legend>
-      <div className="progress">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          value={range[0]}
-          onChange={event => onChange(0, event.target.value)}
-          aria-label={`${label} الأدنى`}
-        />
-        <input
-          type="range"
-          min={min}
-          max={max}
-          value={range[1]}
-          onChange={event => onChange(1, event.target.value)}
-          aria-label={`${label} الأقصى`}
-        />
-      </div>
-    </fieldset>
   );
 }
 

@@ -1,3 +1,4 @@
+import type { CoachAssessment } from "../../shared/coaching";
 import type {
   AccessRequest,
   Analysis,
@@ -422,12 +423,60 @@ export function serializeHealthProfile(
   return {
     playerId: Number(row.playerId),
     previousInjuries: String(row.previousInjuries ?? ""),
+    chronicDiseases: String(row.chronicDiseases ?? ""),
     currentMedications: String(row.currentMedications ?? ""),
     physiotherapy: String(row.physiotherapy ?? ""),
+    availableExams: String(row.availableExams ?? ""),
     otherNotes: String(row.otherNotes ?? ""),
     updatedByName: String(row.updatedByName ?? ""),
     updatedAt: asDate(row.updatedAt) ?? "",
     createdAt: asDate(row.createdAt) ?? "",
+  };
+}
+
+function coachSkills(value: unknown): CoachAssessment["skills"] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap(skill => {
+    if (!skill || typeof skill !== "object") return [];
+    const candidate = skill as { name?: unknown; score?: unknown };
+    return typeof candidate.name === "string" &&
+      (candidate.score === null || typeof candidate.score === "number")
+      ? [{ name: candidate.name, score: candidate.score }]
+      : [];
+  });
+}
+
+function coachExercises(value: unknown): CoachAssessment["exercises"] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap(exercise => {
+    if (!exercise || typeof exercise !== "object") return [];
+    const candidate = exercise as { title?: unknown; description?: unknown };
+    return typeof candidate.title === "string" &&
+      typeof candidate.description === "string"
+      ? [{ title: candidate.title, description: candidate.description }]
+      : [];
+  });
+}
+
+export function serializeCoachAssessment(
+  row: Record<string, unknown>
+): CoachAssessment {
+  const skills = coachSkills(row.skills);
+  return {
+    id: Number(row.id),
+    playerId: Number(row.playerId),
+    coachName: String(row.coachName ?? ""),
+    coachPhotoKey: String(row.coachPhotoKey ?? ""),
+    assessedAt: asDate(row.assessedAt) ?? "",
+    protocol: String(row.protocol ?? ""),
+    notes: String(row.notes ?? ""),
+    skills,
+    measuredSignature: skills.filter(skill => skill.score !== null).map(skill => skill.name).sort().join("|"),
+    overall: typeof row.overall === "number" ? row.overall : null,
+    strengths: stringArray(row.strengths),
+    development: stringArray(row.development),
+    exercises: coachExercises(row.exercises),
+    isDemo: Boolean(row.isDemo),
   };
 }
 

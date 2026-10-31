@@ -57,6 +57,27 @@
       "when": 1793290686940,
       "tag": "0007_natural_meltdown",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1793399939145,
+      "tag": "0008_coach_assessments_health_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1793409531318,
+      "tag": "0009_demo_display_media",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1793413971266,
+      "tag": "0010_academy_join_date",
+      "breakpoints": true
     }
   ]
 }

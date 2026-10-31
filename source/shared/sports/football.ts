@@ -1,15 +1,55 @@
 import type { SportDefinition, StrengthIndicator } from "./types";
 
-/** Preserved verbatim from the existing platform vocabulary. */
-export const FOOTBALL_SKILLS = [
+/** Canonical display vocabulary for new football screens. */
+export const CANONICAL_OUTFIELD_SKILLS = [
   "التسديد",
-  "المراوغة",
   "التمرير",
+  "المراوغة",
+  "التحكم بالكرة",
+  "الاستلام واللمسة الأولى",
+  "التحرك دون كرة",
+  "الجري بالكرة",
+  "الالتحام واستخلاص الكرة",
+  "ضربات الرأس",
+] as const;
+
+export const CANONICAL_GOALKEEPER_SKILLS = [
+  "التصدي للتسديدات",
+  "رد الفعل",
+  "التمركز",
+  "مسك الكرة",
+  "التعامل مع الكرات العالية",
+  "التوزيع باليد والقدم",
+  "الخروج لمواجهة المهاجم",
+] as const;
+
+/**
+ * Public sport configuration intentionally contains only canonical labels. The
+ * legacy labels below remain accepted by server validators so old assessments,
+ * videos, and reports stay readable without rewriting historic records.
+ */
+export const FOOTBALL_SKILLS = [
+  ...CANONICAL_OUTFIELD_SKILLS,
+  ...CANONICAL_GOALKEEPER_SKILLS,
+] as const;
+
+const LEGACY_OUTFIELD_SKILLS = [
   "السرعة",
   "القوة البدنية",
-  "التحكم بالكرة",
   "القفز",
   "اتخاذ القرار",
+] as const;
+const LEGACY_GOALKEEPER_SKILLS = [
+  "التصدي",
+  "توزيع الكرة",
+  "القفز",
+  "اتخاذ القرار",
+] as const;
+
+/** Accepted only for historic compatibility; never returned by the UI catalog. */
+export const FOOTBALL_HISTORIC_SKILLS = [
+  ...LEGACY_OUTFIELD_SKILLS,
+  ...LEGACY_GOALKEEPER_SKILLS,
 ] as const;
 
 export const FOOTBALL_POSITIONS = [
@@ -17,13 +57,51 @@ export const FOOTBALL_POSITIONS = [
   "وسط",
   "مدافع",
   "جناح",
+  "جناح أيمن",
+  "جناح أيسر",
   "حارس مرمى",
 ] as const;
 
+const outfieldWithHistoric = [
+  ...CANONICAL_OUTFIELD_SKILLS,
+  ...LEGACY_OUTFIELD_SKILLS,
+] as const;
+const goalkeeperWithHistoric = [
+  ...CANONICAL_GOALKEEPER_SKILLS,
+  ...LEGACY_GOALKEEPER_SKILLS,
+] as const;
+
 /**
- * Football keeps the existing platform vocabulary (positions and skills) so
- * historical records stay valid without a data rewrite.
+ * The server's accepted football vocabulary is scoped to the player position.
+ * Canonical names power all new display flows; historic names remain legal only
+ * for the compatible position so cross-position validation stays strict.
  */
+export const FOOTBALL_SKILLS_BY_POSITION: Record<string, readonly string[]> = {
+  مهاجم: outfieldWithHistoric,
+  وسط: outfieldWithHistoric,
+  مدافع: outfieldWithHistoric,
+  جناح: outfieldWithHistoric,
+  "جناح أيمن": outfieldWithHistoric,
+  "جناح أيسر": outfieldWithHistoric,
+  "حارس مرمى": goalkeeperWithHistoric,
+};
+
+export function isAcceptedFootballSkill(skill: string): boolean {
+  return (
+    (FOOTBALL_SKILLS as readonly string[]).includes(skill) ||
+    (FOOTBALL_HISTORIC_SKILLS as readonly string[]).includes(skill)
+  );
+}
+
+/** Canonical display-only selection for a football player. */
+export function canonicalFootballSkillsForPosition(
+  position: string
+): readonly string[] {
+  return position === "حارس مرمى"
+    ? CANONICAL_GOALKEEPER_SKILLS
+    : CANONICAL_OUTFIELD_SKILLS;
+}
+
 const FOOTBALL_INDICATOR_SOURCE =
   "docs/sports-scientific-validation.md#provisional-indicators";
 
@@ -92,7 +170,7 @@ export const FOOTBALL_INDICATORS: readonly StrengthIndicator[] = [
     "عدد التكرارات أو الحمل المسجل في تمرين الدفع بالأذرع.",
     "قوة الجزء العلوي",
     "repetitions",
-    ["تكرار", "كغ"]
+    ["تكرار"]
   ),
   indicator(
     "football.upper.pull",
@@ -228,15 +306,13 @@ export const FOOTBALL: SportDefinition = {
     positions: "المراكز الرياضية",
     analysisContext: "تحليل الأداء",
   },
-  groups: FOOTBALL_POSITIONS.map(position => ({
-    id: position,
-    name: position,
-  })),
+  groups: FOOTBALL_POSITIONS.map(position => ({ id: position, name: position })),
   skills: FOOTBALL_SKILLS,
   indicators: FOOTBALL_INDICATORS,
   apparatus: [],
   categories: [],
   notes: [
+    "تعرض الشاشات الجديدة التسميات القانونية الحالية فقط؛ تظل التسميات التاريخية محفوظة في السجلات السابقة.",
     "المؤشرات مسودة عمل بانتظار المراجعة العلمية، ولا تحمل عتبات أو تصنيفًا.",
   ],
 };

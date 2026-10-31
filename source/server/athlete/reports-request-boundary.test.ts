@@ -93,7 +93,7 @@ describe("isolated report and export request boundaries", () => {
     expect(await defaultReport.json()).toMatchObject({
       player: { id: 101 },
       skill: "",
-      isDemo: true,
+      isDemo: false,
       analyses: [expect.objectContaining({ id: 501 })],
       videos: [expect.objectContaining({ id: 301 })],
       notes: [expect.objectContaining({ id: 701 })],

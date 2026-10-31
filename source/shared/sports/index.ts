@@ -1,8 +1,9 @@
-import { FOOTBALL } from "./football";
+import { FOOTBALL, FOOTBALL_HISTORIC_SKILLS } from "./football";
 import {
   GYMNASTICS,
   GYMNASTICS_APPARATUS,
   GYMNASTICS_CATEGORIES,
+  GYMNASTICS_HISTORIC_SKILLS,
 } from "./gymnastics";
 import {
   SPORT_IDS,
@@ -45,11 +46,17 @@ export function sportDefinition(id: SportId): SportDefinition {
 
 /** Skills permitted for a sport. Used by server validation, not only the UI. */
 export function skillsForSport(id: SportId): readonly string[] {
-  return SPORTS[id].skills;
+  return [...new Set([
+    ...SPORTS[id].skills,
+    ...(id === "football" ? FOOTBALL_HISTORIC_SKILLS : [
+      ...GYMNASTICS_HISTORIC_SKILLS,
+      ...GYMNASTICS_APPARATUS.map(apparatus => apparatus.name),
+    ]),
+  ])];
 }
 
 export function isSkillForSport(id: SportId, skill: string): boolean {
-  return SPORTS[id].skills.includes(skill);
+  return skillsForSport(id).includes(skill);
 }
 
 export function groupsForSport(id: SportId): readonly string[] {
@@ -155,7 +162,7 @@ export function indicatorAppliesToApparatus(
 
 /** Union of every sport's skills, for backward-compatible read paths. */
 export const ALL_SKILLS: readonly string[] = [
-  ...new Set(SPORT_IDS.flatMap(id => [...SPORTS[id].skills])),
+  ...new Set(SPORT_IDS.flatMap(id => [...skillsForSport(id)])),
 ];
 
 /** Position labels across sports, used for backwards-compatible filters. */

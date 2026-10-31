@@ -9,6 +9,15 @@ import App from "./App";
 import { startLogin } from "./const";
 import "./index.css";
 
+import { loadBundledCatalog } from "./i18n/catalogLoader";
+import { LanguageProvider } from "./i18n/LanguageProvider";
+import { LanguageSelector } from "./i18n/LanguageSelector";
+import { languageStore } from "./i18n/language";
+import "./i18n/language-selector.css";
+
+languageStore.setCatalogLoader(loadBundledCatalog);
+
+
 const queryClient = new QueryClient();
 
 /**
@@ -109,7 +118,10 @@ if (!rootElement) {
 }
 
 createRoot(rootElement).render(
-  <trpc.Provider
+  
+  <LanguageProvider>
+    <LanguageSelector />
+    <trpc.Provider
     client={trpcClient}
     queryClient={queryClient}
   >
@@ -117,4 +129,6 @@ createRoot(rootElement).render(
       <App />
     </QueryClientProvider>
   </trpc.Provider>
+  </LanguageProvider>
+
 );

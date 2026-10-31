@@ -13,8 +13,40 @@ import { EmptyState, ErrorState, Loading } from "./UI";
 import { formatDate } from "./EvaluationSummary";
 import "./session-evaluation.css";
 
+type NoteWithAuthorPhoto = Note & {
+  /** Optional server-provided author profile image; absent records use initials. */
+  authorPhotoKey?: string;
+};
+
 function sourceLabel(note: Note) {
-  return note.source === "automatic" ? "تحليل آلي" : "مدرب";
+  return note.source === "automatic" ? "المصدر: تحليل آلي" : "المصدر: مدرب";
+}
+
+function authorInitials(name?: string) {
+  const initials = (name ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join("");
+  return initials || "؟";
+}
+
+function NoteAuthorAvatar({ note }: { note: NoteWithAuthorPhoto }) {
+  const [failed, setFailed] = useState(false);
+  const photoKey = note.authorPhotoKey?.trim();
+  const name = note.authorName || "غير متوفر من الخادم";
+
+  return (
+    <span className="avatar avatar-sm" aria-label={`رمز الكاتب: ${name}`}>
+      {photoKey && !failed ? (
+        <img src={photoKey} alt="" onError={() => setFailed(true)} />
+      ) : (
+        <span aria-hidden="true">{authorInitials(note.authorName)}</span>
+      )}
+    </span>
+  );
 }
 
 function NoteCard({
@@ -22,7 +54,7 @@ function NoteCard({
   canEdit,
   onUpdated,
 }: {
-  note: Note;
+  note: NoteWithAuthorPhoto;
   canEdit: boolean;
   onUpdated: () => Promise<void>;
 }) {
@@ -64,21 +96,28 @@ function NoteCard({
     <article className="session-note-item">
       <header>
         <div>
-          <span
-            className={`note-source ${note.source === "automatic" ? "automatic" : "coach"}`}
-          >
-            <UserRound aria-hidden="true" size={15} /> {sourceLabel(note)}
-          </span>
-          <strong className="note-author">
-            {note.authorName || "غير متوفر من الخادم"}
-          </strong>
-          <small className="note-author-role">
-            {note.source === "automatic"
-              ? "رصد آلي — غير قابل للتعديل كملاحظة مدرب"
-              : "الكاتب الأصلي للملاحظة"}
-          </small>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <NoteAuthorAvatar note={note} />
+            <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+              <span
+                className={`note-source ${note.source === "automatic" ? "automatic" : "coach"}`}
+              >
+                <UserRound aria-hidden="true" size={15} /> {sourceLabel(note)}
+              </span>
+              <strong className="note-author">
+                الكاتب: {note.authorName || "غير متوفر من الخادم"}
+              </strong>
+              <small className="note-author-role">
+                {note.source === "automatic"
+                  ? "رصد آلي — غير قابل للتعديل كملاحظة مدرب"
+                  : "الكاتب الأصلي للملاحظة"}
+              </small>
+            </div>
+          </div>
         </div>
-        <time dateTime={note.createdAt}>{formatDate(note.createdAt)}</time>
+        <time dateTime={note.createdAt}>
+          التاريخ: {formatDate(note.createdAt)}
+        </time>
       </header>
       {note.lastEditedByName || note.lastEditedByUserId ? (
         <p className="note-attribution">
@@ -225,7 +264,7 @@ export default function SessionNotes({
   const { organization, invalidate } = useAthlete();
   const isAcademy = organization?.type === "academy";
   const isClub = organization?.type === "club";
-  const notesQuery = useApi<Note[]>(
+  const notesQuery = useApi<NoteWithAuthorPhoto[]>(
     `/notes?playerId=${playerId}`,
     Boolean(playerId)
   );
@@ -235,9 +274,14 @@ export default function SessionNotes({
   const [error, setError] = useState("");
   const notes = useMemo(
     () =>
-      (notesQuery.data ?? []).filter(
-        note => analysisId === undefined || note.analysisId === analysisId
-      ),
+      (notesQuery.data ?? [])
+        .filter(
+          note => analysisId === undefined || note.analysisId === analysisId
+        )
+        .sort(
+          (left, right) =>
+            Date.parse(right.createdAt) - Date.parse(left.createdAt)
+        ),
     [analysisId, notesQuery.data]
   );
 

@@ -14,6 +14,7 @@ import {
   accessRequests,
   analyses,
   auditEvents,
+  coachAssessments,
   demoSessions,
   exercisePlans,
   favorites,
@@ -63,6 +64,7 @@ import {
   type SensitiveGrant,
   type SensitiveScope,
 } from "../../shared/health";
+import { skillsForPlayer } from "../../shared/coaching";
 import {
   BadRequestError,
   ForbiddenError,
@@ -105,6 +107,7 @@ import {
   historyPoints,
   serializeAccessRequest,
   serializeAnalysis,
+  serializeCoachAssessment,
   serializeEmergencyContact,
   serializeExercisePlan,
   serializeHealthProfile,
@@ -117,6 +120,12 @@ import {
   type VideoAnalysisState,
 } from "./serializers";
 import { demoPlayersForSeed } from "./seed";
+import { demoPlayersForSeed as referencePlayersForSeed, demoCoachAssessmentsForSeed } from "./referenceSeed";
+import {
+  demoContentFilename,
+  refreshDemoMediaReferencesInTransaction,
+  verifiedDemoAssetForKey,
+} from "./demoPresentation";
 import { normalizePoseResult } from "./poseNormalization";
 import {
   canManageSensitiveGrants,
@@ -135,8 +144,10 @@ import {
   exportVerifiedReportCsv,
   exportVerifiedReportHtml,
 } from "./verifiedReportExport";
+import { PdfReportRenderError, renderVerifiedReportPdf } from "./pdfReport";
 import {
   analysisInputSchema,
+  coachAssessmentInputSchema,
   emergencyContactSchema,
   exercisePlanInputSchema,
   exercisePlanPatchSchema,
@@ -154,6 +165,7 @@ import {
   requestActionSchema,
   requestInputSchema,
   sensitiveGrantSchema,
+  validateAcademyJoinDate,
   validateIndicatorsForSport,
   videoQuerySchema,
 } from "./validation";
@@ -883,6 +895,11 @@ async function buildReport(
     gte(notes.createdAt, range.from),
     lte(notes.createdAt, range.to),
   ];
+  const coachAssessmentWhere = [
+    eq(coachAssessments.playerId, playerId),
+    gte(coachAssessments.assessedAt, range.from),
+    lte(coachAssessments.assessedAt, range.to),
+  ];
   if (isDemoWorkspace(context)) {
     noteWhere.push(
       inArray(notes.organizationId, [
@@ -892,23 +909,29 @@ async function buildReport(
     );
   }
   if (isClub(context)) noteWhere.push(eq(notes.visibility, "shared"));
-  const [analysisRows, videoRows, noteRows] = await Promise.all([
-    db
-      .select()
-      .from(analyses)
-      .where(and(...analysisWhere))
-      .orderBy(desc(analyses.createdAt)),
-    db
-      .select()
-      .from(videos)
-      .where(and(...videoWhere))
-      .orderBy(desc(videos.recordedAt)),
-    db
-      .select()
-      .from(notes)
-      .where(and(...noteWhere))
-      .orderBy(asc(notes.source), desc(notes.createdAt)),
-  ]);
+  const [analysisRows, videoRows, noteRows, coachAssessmentRows] =
+    await Promise.all([
+      db
+        .select()
+        .from(analyses)
+        .where(and(...analysisWhere))
+        .orderBy(desc(analyses.createdAt)),
+      db
+        .select()
+        .from(videos)
+        .where(and(...videoWhere))
+        .orderBy(desc(videos.recordedAt)),
+      db
+        .select()
+        .from(notes)
+        .where(and(...noteWhere))
+        .orderBy(asc(notes.source), desc(notes.createdAt)),
+      db
+        .select()
+        .from(coachAssessments)
+        .where(and(...coachAssessmentWhere))
+        .orderBy(desc(coachAssessments.assessedAt)),
+    ]);
   const visibleNoteRows = isClub(context)
     ? noteRows.filter(note => note.visibility === "shared")
     : noteRows;
@@ -934,22 +957,47 @@ async function buildReport(
   const history = comparisonHistory.filter(
     point => new Date((point as { date: string }).date) >= range.from
   );
+  const assessmentPresentationRows = coachAssessmentRows.map(
+    serializeCoachAssessment
+  );
+  const serializedCoachAssessments = assessmentPresentationRows
+    .filter(
+      assessment =>
+        !range.skill ||
+        assessment.skills.some(skill => skill.name === range.skill)
+    )
+    .map(assessment => {
+      if (!range.skill) return assessment;
+      // Detail filtering must never turn a full-assessment mean into a
+      // single-skill score. The saved server-derived overall remains the same
+      // general /10 source used by cards and profile display.
+      return {
+        ...assessment,
+        skills: assessment.skills.filter(skill => skill.name === range.skill),
+      };
+    });
+  const serializedVideos = serializeVideosWithSavedPoseState(
+    videoRows,
+    videoAnalysisRows
+  );
   const player = serializePlayer(
     { ...row.player, history },
     row.academyName,
     Boolean(context.isDemo)
   );
-  return {
+  const report: Report & { coachAssessments?: ReturnType<typeof serializeCoachAssessment>[] } = {
     player,
     from: range.from.toISOString(),
     to: range.to.toISOString(),
     skill: range.skill,
     analyses: analysisRows.map(analysis => serializeAnalysis(analysis)),
-    videos: serializeVideosWithSavedPoseState(videoRows, videoAnalysisRows),
+    videos: serializedVideos,
     notes: visibleNoteRows.map(note => serializeNote(note, row.player.name)),
     comparisonHistory: historyPoints(comparisonHistory),
-    isDemo: true,
+    isDemo: Boolean(context.isDemo),
+    coachAssessments: serializedCoachAssessments,
   };
+  return report;
 }
 
 function legacyReportHtmlArchive(report: Report): string {
@@ -1120,8 +1168,8 @@ async function createOrganizationForUser(
 }
 
 
-/** Adds only the unmeasured demo record and leaves every existing player intact. */
-async function seedTruthfulDemoPlayers(
+/** Preserve the existing Messi example. */
+async function seedLegacyDemoPlayer(
   tx: any,
   academyId: number,
   now: Date
@@ -1165,6 +1213,241 @@ async function seedTruthfulDemoPlayers(
     inserted += 1;
   }
   return inserted;
+}
+
+async function seedReferenceDemoPlayers(
+  tx: any,
+  academyId: number,
+  now: Date
+): Promise<{ players: number; assessments: number; media: number }> {
+  // This helper is called only for a server-created demo academy. Keep this
+  // guard local so a future caller cannot seed fictitious identities elsewhere.
+  const demoAcademy = await tx
+    .select({ id: organizations.id })
+    .from(organizations)
+    .where(
+      and(
+        eq(organizations.id, academyId),
+        eq(organizations.isDemo, true),
+        eq(organizations.type, "academy")
+      )
+    )
+    .limit(1)
+    .for("update");
+  if (!demoAcademy[0])
+    throw new Error("Demo profiles can only be seeded into a demo academy");
+
+  const playerSeeds = referencePlayersForSeed(now);
+  const seedByProfileKey = new Map(
+    playerSeeds.map((seed, profileIndex) => [
+      seed.demoProfileKey,
+      { seed, profileIndex },
+    ])
+  );
+  const profileKeys = [...seedByProfileKey.keys()];
+  const existingPlayerRows = await tx
+    .select({
+      id: players.id,
+      demoProfileKey: players.demoProfileKey,
+      academyJoinDate: players.academyJoinDate,
+      birthDate: players.birthDate,
+    })
+    .from(players)
+    .where(
+      and(
+        eq(players.academyId, academyId),
+        inArray(players.demoProfileKey, profileKeys)
+      )
+    )
+    .orderBy(asc(players.id))
+    .for("update");
+  const existingPlayerByProfileKey = new Map<string, number>();
+  for (const player of existingPlayerRows) {
+    if (
+      typeof player.demoProfileKey === "string" &&
+      !existingPlayerByProfileKey.has(player.demoProfileKey)
+    ) {
+      existingPlayerByProfileKey.set(player.demoProfileKey, player.id);
+    }
+  }
+  // Only opaque reference identities in the locked demo academy are eligible.
+  // Never replace an academy-entered date or infer a real athlete's start date.
+  for (const player of existingPlayerRows) {
+    const seed = seedByProfileKey.get(player.demoProfileKey)?.seed;
+    if (
+      !player.academyJoinDate &&
+      seed?.academyJoinDate &&
+      !validateAcademyJoinDate(seed.academyJoinDate, player.birthDate)
+    ) {
+      await tx
+        .update(players)
+        .set({ academyJoinDate: seed.academyJoinDate })
+        .where(
+          and(eq(players.id, player.id), eq(players.academyId, academyId))
+        );
+    }
+  }
+
+  const missingPlayerSeeds = playerSeeds.filter(
+    seed => !existingPlayerByProfileKey.has(seed.demoProfileKey)
+  );
+  if (missingPlayerSeeds.length) {
+    await tx.insert(players).values(
+      missingPlayerSeeds.map(seed => ({
+        academyId,
+        name: seed.name,
+        sport: seed.sport,
+        gymnasticsCategory: seed.gymnasticsCategory,
+        primaryApparatus: seed.primaryApparatus || null,
+        demoProfileKey: seed.demoProfileKey,
+        age: seed.age,
+        nationality: seed.nationality,
+        position: seed.position,
+        foot: seed.foot,
+        height: seed.height,
+        weight: seed.weight,
+        region: seed.region,
+        birthDate: seed.birthDate,
+        academyJoinDate: seed.academyJoinDate ?? null,
+        jersey: seed.jersey,
+        photoKey: seed.photoKey,
+        overall: seed.overall,
+        improvement: seed.improvement,
+        discoverable: seed.discoverable,
+        strengths: seed.strengths,
+        weaknesses: seed.weaknesses,
+        skills: seed.skills,
+        physicalTests: seed.physicalTests,
+        history: seed.history,
+        demoArchived: false,
+        lastAnalysisAt: null,
+        createdAt: now,
+      }))
+    );
+  }
+
+  // Re-read under the same transaction instead of deriving IDs from a multi-row
+  // INSERT; that is safe across MySQL auto-increment configurations.
+  const playerRows = missingPlayerSeeds.length
+    ? await tx
+        .select({ id: players.id, demoProfileKey: players.demoProfileKey })
+        .from(players)
+        .where(
+          and(
+            eq(players.academyId, academyId),
+            inArray(players.demoProfileKey, profileKeys)
+          )
+        )
+        .orderBy(asc(players.id))
+        .for("update")
+    : existingPlayerRows;
+  const playerIdByProfileKey = new Map<string, number>();
+  for (const player of playerRows) {
+    if (
+      typeof player.demoProfileKey === "string" &&
+      !playerIdByProfileKey.has(player.demoProfileKey)
+    ) {
+      playerIdByProfileKey.set(player.demoProfileKey, player.id);
+    }
+  }
+
+  const profileKeyByPlayerId = new Map(
+    [...playerIdByProfileKey].map(([profileKey, playerId]) => [
+      playerId,
+      profileKey,
+    ])
+  );
+  const assessmentSeedsByProfileKey = new Map(
+    [...seedByProfileKey].map(([profileKey, seeded]) => [
+      profileKey,
+      demoCoachAssessmentsForSeed(seeded.seed, seeded.profileIndex, now),
+    ])
+  );
+  const playerIds = [...playerIdByProfileKey.values()];
+  const existingAssessmentRows = playerIds.length
+    ? await tx
+        .select({
+          id: coachAssessments.id,
+          playerId: coachAssessments.playerId,
+          protocol: coachAssessments.protocol,
+          coachName: coachAssessments.coachName,
+          isDemo: coachAssessments.isDemo,
+        })
+        .from(coachAssessments)
+        .where(inArray(coachAssessments.playerId, playerIds))
+        .for("update")
+    : [];
+  const assessmentCountByPlayerId = new Map<number, number>();
+  const legacyAssessmentIdsByProtocol = new Map<string, number[]>();
+  for (const assessment of existingAssessmentRows) {
+    const profileKey = profileKeyByPlayerId.get(assessment.playerId);
+    const assessmentSeeds = profileKey
+      ? assessmentSeedsByProfileKey.get(profileKey)
+      : undefined;
+    if (!profileKey || !assessmentSeeds) continue;
+    const protocol = `DEMO_REFERENCE_V2:${profileKey}`;
+    const coachName = assessmentSeeds[0]?.coachName;
+    const isReferenceRow =
+      assessment.isDemo &&
+      (assessment.coachName === coachName ||
+        assessment.coachName === "مدرب العرض الافتراضي — ATHLETE AI") &&
+      (assessment.protocol === protocol ||
+        (assessment.protocol.startsWith(`${protocol}:`) &&
+          /^R[1-5]$/.test(assessment.protocol.slice(protocol.length + 1))));
+    if (!isReferenceRow) continue;
+    assessmentCountByPlayerId.set(
+      assessment.playerId,
+      (assessmentCountByPlayerId.get(assessment.playerId) ?? 0) + 1
+    );
+    if (
+      assessment.protocol !== protocol ||
+      assessment.coachName !== coachName
+    ) {
+      const ids = legacyAssessmentIdsByProtocol.get(protocol) ?? [];
+      ids.push(assessment.id);
+      legacyAssessmentIdsByProtocol.set(protocol, ids);
+    }
+  }
+  await Promise.all(
+    [...legacyAssessmentIdsByProtocol].map(([protocol, ids]) =>
+      tx
+        .update(coachAssessments)
+        .set({ protocol, coachName: "رائد الحربي — مدرب افتراضي" })
+        .where(inArray(coachAssessments.id, ids))
+    )
+  );
+
+  const missingAssessments = [...playerIdByProfileKey.entries()].flatMap(
+    ([profileKey, playerId]) => {
+      const existingCount = assessmentCountByPlayerId.get(playerId) ?? 0;
+      // A seeded five-record series is immutable across page refresh/date
+      // changes. Manual records have different author/protocol provenance.
+      return assessmentSeedsByProfileKey
+        .get(profileKey)!
+        .slice(existingCount)
+        .map(assessment => ({ playerId, ...assessment, createdAt: now }));
+    }
+  );
+  if (missingAssessments.length)
+    await tx.insert(coachAssessments).values(missingAssessments);
+
+  const media = await refreshDemoMediaReferencesInTransaction(
+    tx,
+    academyId,
+    now
+  );
+  return {
+    players: missingPlayerSeeds.length,
+    assessments: missingAssessments.length,
+    media,
+  };
+}
+
+
+async function seedTruthfulDemoPlayers(tx: any, academyId: number, now: Date): Promise<number> {
+  const legacy = await seedLegacyDemoPlayer(tx, academyId, now);
+  const reference = await seedReferenceDemoPlayers(tx, academyId, now);
+  return legacy + reference.players;
 }
 
 async function ensureDemoSetup(user: OrganizationOwner): Promise<void> {
@@ -1233,7 +1516,7 @@ async function ensureDemoSetup(user: OrganizationOwner): Promise<void> {
       entityType: "organization",
       entityId: academy.id,
       action: "organization.demo_seeded",
-      metadata: { playerCount, source: "unmeasured_messi_only" },
+      metadata: { playerCount, source: "legacy_and_reference_v2" },
     });
   });
 }
@@ -1305,7 +1588,7 @@ async function createDemoSession(): Promise<{ token: string }> {
         academyId,
         clubId,
         playerCount,
-        source: "unmeasured_messi_only",
+        source: "legacy_and_reference_v2",
       },
     });
   });
@@ -2141,27 +2424,40 @@ export function registerAthleteRoutes(app: Express): void {
       const video = videoRows[0];
       if (!video) throw NotFoundError("الفيديو غير موجود");
       await requireFullPlayerAccess(db, context, video.playerId);
-      const chunks = await db
-        .select()
-        .from(videoChunks)
-        .where(eq(videoChunks.videoId, video.id))
-        .orderBy(asc(videoChunks.chunkIndex));
-      const body = Buffer.concat(chunks.map(chunk => Buffer.from(chunk.data)));
-      if (body.length !== video.size)
-        throw new Error("Private video chunk size mismatch");
-      const range = parseRange(req.headers.range, video.size);
+      let body: Buffer;
+      let contentType = video.mime;
+      let filename = `video-${video.id}${video.mime === "video/mp4" ? ".mp4" : ".webm"}`;
+      if (video.demoAssetKey) {
+        const asset = await verifiedDemoAssetForKey(video.demoAssetKey);
+        // A demo rendition may be re-encoded while retaining its immutable skill key.
+        // The manifest verifier checks actual SHA/size; stored historical size is not authoritative.
+        if (!asset) throw NotFoundError("عينة العرض المرخّصة غير متاحة حاليًا");
+        body = asset.data;
+        contentType = "video/mp4";
+        filename = demoContentFilename(asset);
+      } else {
+        const chunks = await db
+          .select()
+          .from(videoChunks)
+          .where(eq(videoChunks.videoId, video.id))
+          .orderBy(asc(videoChunks.chunkIndex));
+        body = Buffer.concat(chunks.map(chunk => Buffer.from(chunk.data)));
+        if (body.length !== video.size)
+          throw new Error("Private video chunk size mismatch");
+      }
+      const range = parseRange(req.headers.range, body.length);
       res.set({
         "Cache-Control": "private, no-store",
         "Accept-Ranges": "bytes",
-        "Content-Type": video.mime,
-        "Content-Disposition": `inline; filename="video-${video.id}${video.mime === "video/mp4" ? ".mp4" : ".webm"}"`,
+        "Content-Type": contentType,
+        "Content-Disposition": `inline; filename="${filename}"`,
       });
       if (range) {
         const fragment = body.subarray(range.start, range.end + 1);
         res
           .status(206)
           .set({
-            "Content-Range": `bytes ${range.start}-${range.end}/${video.size}`,
+            "Content-Range": `bytes ${range.start}-${range.end}/${body.length}`,
             "Content-Length": String(fragment.length),
           })
           .send(fragment);
@@ -2524,6 +2820,17 @@ export function registerAthleteRoutes(app: Express): void {
         res.type("text/html; charset=utf-8").send(reportHtml(report));
         return;
       }
+      if (query.format === "pdf") {
+        try {
+          const document = await renderVerifiedReportPdf(report);
+          res.type("application/pdf").send(document);
+          return;
+        } catch (error) {
+          if (error instanceof PdfReportRenderError)
+            throw new HttpError(503, error.message);
+          throw error;
+        }
+      }
       res.type("text/csv; charset=utf-8").send(reportCsv(report));
     })
   );
@@ -2787,6 +3094,116 @@ export function registerAthleteRoutes(app: Express): void {
         return { note: rows[0], playerName: player.name };
       });
       res.json(serializeNote(result.note, result.playerName));
+    })
+  );
+
+  // ---------------------------------------------------------------------
+  // Coach assessments (append-only, attributable human assessments)
+  // ---------------------------------------------------------------------
+
+  router.get(
+    "/players/:id/coach-assessments",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      const playerId = parse(positiveId, req.params.id);
+      const db = await database();
+      await requireFullPlayerAccess(db, context, playerId);
+      const rows = await db
+        .select()
+        .from(coachAssessments)
+        .where(eq(coachAssessments.playerId, playerId))
+        .orderBy(desc(coachAssessments.assessedAt));
+      res.json(rows.map(serializeCoachAssessment));
+    })
+  );
+
+  router.post(
+    "/players/:id/coach-assessments",
+    asyncRoute(async (req, res) => {
+      const actor = await requireActor(req);
+      const context = await requireOrganization(req, actor);
+      if (!isAcademy(context))
+        throw ForbiddenError("تسجيل تقييم المدرب متاح للأكاديمية فقط");
+      const playerId = parse(positiveId, req.params.id);
+      const input = parse(coachAssessmentInputSchema, req.body);
+      const db = await database();
+      const target = await playerWithAcademy(db, playerId);
+      if (!canManagePlayer(context, target.player.academyId))
+        throw ForbiddenError("لا تملك صلاحية تسجيل تقييم لهذا اللاعب");
+      const sport = isSportId(target.player.sport)
+        ? target.player.sport
+        : "football";
+      const allowedSkills = skillsForPlayer(
+        sport,
+        target.player.position,
+        target.player.primaryApparatus
+      );
+      if (!allowedSkills.length)
+        throw BadRequestError("لا توجد مهارات تقييم صالحة لمركز اللاعب الحالي");
+      for (const skill of input.skills) {
+        if (!allowedSkills.includes(skill.name))
+          throw BadRequestError(
+            "المهارة المحددة لا تتبع رياضة اللاعب أو مركزه"
+          );
+      }
+      const assessedAt = new Date(input.assessedAt);
+      const now = new Date();
+      if (Number.isNaN(assessedAt.getTime()) || assessedAt > now)
+        throw BadRequestError("تاريخ تقييم المدرب غير صالح أو في المستقبل");
+      const assessedScores = input.skills.flatMap(skill =>
+        skill.score === null ? [] : [skill.score]
+      );
+      const overall = assessedScores.length
+        ? Number(
+            (
+              assessedScores.reduce((sum, score) => sum + score, 0) /
+              assessedScores.length
+            ).toFixed(2)
+          )
+        : null;
+      const coachName = actorDisplayName(actor);
+      const result = await db.transaction(async tx => {
+        const created = await tx.insert(coachAssessments).values({
+          playerId: target.player.id,
+          coachName,
+          // No user-avatar field exists; a client-supplied portrait is forbidden.
+          coachPhotoKey: "",
+          assessedAt,
+          protocol: input.protocol,
+          notes: input.notes,
+          skills: input.skills,
+          overall,
+          strengths: input.strengths,
+          development: input.development,
+          exercises: input.exercises,
+          isDemo: Boolean(context.isDemo),
+          createdAt: now,
+        });
+        const assessmentId = insertId(created);
+        await writeAudit(tx, {
+          organizationId: context.organizationId,
+          actorUserId: actorUserId(actor),
+          entityType: "coach_assessment",
+          entityId: assessmentId,
+          action: "coach_assessment.created",
+          metadata: {
+            playerId: target.player.id,
+            protocol: input.protocol,
+            skillNames: input.skills.map(skill => skill.name),
+            assessedSkillCount: assessedScores.length,
+            isDemo: Boolean(context.isDemo),
+          },
+        });
+        const rows = await tx
+          .select()
+          .from(coachAssessments)
+          .where(eq(coachAssessments.id, assessmentId))
+          .limit(1);
+        if (!rows[0]) throw new Error("Coach assessment missing after insert");
+        return rows[0];
+      });
+      res.status(201).json(serializeCoachAssessment(result));
     })
   );
 
